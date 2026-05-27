@@ -1,0 +1,68 @@
+name: fover
+description: Production football live score application
+
+publish_to: "none"
+
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.11.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+
+  # State Management
+  flutter_riverpod: ^2.6.1
+
+  # Routing
+  go_router: ^16.2.0
+
+  # Network
+  dio: ^5.9.0
+
+  # Cache / Storage
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  flutter_secure_storage: ^9.2.4
+
+  # Connectivity
+  connectivity_plus: ^6.1.5
+
+  # Image cache
+  cached_network_image: ^3.4.1
+
+  # Firebase
+  firebase_core: ^4.1.1
+  firebase_messaging: ^16.0.1
+
+ 
+
+  # Ads
+ 
+
+  # Utils
+  intl: ^0.20.2
+  logger: ^2.6.1
+  shimmer: ^3.0.0
+
+  # Model generation
+  freezed_annotation: ^3.1.0
+  json_annotation: ^4.9.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/icons/
+
+  
