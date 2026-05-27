@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 class LeagueCard extends StatelessWidget {
@@ -9,6 +10,7 @@ class LeagueCard extends StatelessWidget {
     required this.expanded,
     required this.onToggle,
     required this.matches,
+    this.countryFlagUrl,
   });
 
   final String countryCode;
@@ -17,6 +19,7 @@ class LeagueCard extends StatelessWidget {
   final bool expanded;
   final VoidCallback onToggle;
   final List<Widget> matches;
+  final String? countryFlagUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -42,13 +45,27 @@ class LeagueCard extends StatelessWidget {
                       CircleAvatar(
                         radius: 22,
                         backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.22),
-                        child: Text(
-                          countryCode,
-                          style: theme.textTheme.labelLarge?.copyWith(
-                                color: theme.colorScheme.primary,
-                                fontWeight: FontWeight.w800,
+                        child: countryFlagUrl != null && countryFlagUrl!.isNotEmpty
+                            ? CachedNetworkImage(
+                                imageUrl: countryFlagUrl!,
+                                fit: BoxFit.cover,
+                                width: 30,
+                                height: 30,
+                                errorWidget: (context, url, error) => Text(
+                                  countryCode,
+                                  style: theme.textTheme.labelLarge?.copyWith(
+                                        color: theme.colorScheme.primary,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                ),
+                              )
+                            : Text(
+                                countryCode,
+                                style: theme.textTheme.labelLarge?.copyWith(
+                                      color: theme.colorScheme.primary,
+                                      fontWeight: FontWeight.w800,
+                                    ),
                               ),
-                        ),
                       ),
                       const SizedBox(width: 14),
                       Expanded(

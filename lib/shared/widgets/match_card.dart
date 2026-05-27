@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 class MatchCard extends StatelessWidget {
@@ -12,6 +13,8 @@ class MatchCard extends StatelessWidget {
     this.redCardsB = 0,
     this.yellowCardsA = 0,
     this.yellowCardsB = 0,
+    this.teamALogoUrl,
+    this.teamBLogoUrl,
   });
 
   final String teamA;
@@ -23,6 +26,8 @@ class MatchCard extends StatelessWidget {
   final int redCardsB;
   final int yellowCardsA;
   final int yellowCardsB;
+  final String? teamALogoUrl;
+  final String? teamBLogoUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -46,12 +51,14 @@ class MatchCard extends StatelessWidget {
                   teamName: teamA,
                   redCards: redCardsA,
                   yellowCards: yellowCardsA,
+                  logoUrl: teamALogoUrl,
                 ),
                 const SizedBox(height: 14),
                 _TeamRow(
                   teamName: teamB,
                   redCards: redCardsB,
                   yellowCards: yellowCardsB,
+                  logoUrl: teamBLogoUrl,
                 ),
               ],
             ),
@@ -88,11 +95,13 @@ class _TeamRow extends StatelessWidget {
     required this.teamName,
     required this.redCards,
     required this.yellowCards,
+    this.logoUrl,
   });
 
   final String teamName;
   final int redCards;
   final int yellowCards;
+  final String? logoUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -103,13 +112,27 @@ class _TeamRow extends StatelessWidget {
         CircleAvatar(
           radius: 18,
           backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.22),
-          child: Text(
-            teamName.split(' ').map((part) => part.characters.first).take(2).join(),
-            style: theme.textTheme.labelLarge?.copyWith(
-                  color: theme.colorScheme.primary,
-                  fontWeight: FontWeight.w700,
+          child: logoUrl != null && logoUrl!.isNotEmpty
+              ? CachedNetworkImage(
+                  imageUrl: logoUrl!,
+                  fit: BoxFit.cover,
+                  width: 28,
+                  height: 28,
+                  errorWidget: (context, url, error) => Text(
+                    teamName.split(' ').map((part) => part.characters.first).take(2).join(),
+                    style: theme.textTheme.labelLarge?.copyWith(
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.w700,
+                        ),
+                  ),
+                )
+              : Text(
+                  teamName.split(' ').map((part) => part.characters.first).take(2).join(),
+                  style: theme.textTheme.labelLarge?.copyWith(
+                        color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.w700,
+                      ),
                 ),
-          ),
         ),
         const SizedBox(width: 12),
         Expanded(

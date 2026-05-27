@@ -1,5 +1,7 @@
-class MatchInfo {
-  const MatchInfo({
+import 'package:fover/features/home/domain/models/match_model.dart';
+
+class MatchResponseModel {
+  MatchResponseModel({
     required this.teamA,
     required this.teamB,
     required this.score,
@@ -9,8 +11,6 @@ class MatchInfo {
     this.redCardsB = 0,
     this.yellowCardsA = 0,
     this.yellowCardsB = 0,
-    this.teamALogoUrl,
-    this.teamBLogoUrl,
   });
 
   final String teamA;
@@ -22,11 +22,9 @@ class MatchInfo {
   final int redCardsB;
   final int yellowCardsA;
   final int yellowCardsB;
-  final String? teamALogoUrl;
-  final String? teamBLogoUrl;
 
-  factory MatchInfo.fromJson(Map<String, dynamic> json) {
-    return MatchInfo(
+  factory MatchResponseModel.fromJson(Map<String, dynamic> json) {
+    return MatchResponseModel(
       teamA: json['teamA'] as String? ?? json['homeTeam'] as String? ?? '',
       teamB: json['teamB'] as String? ?? json['awayTeam'] as String? ?? '',
       score: json['score'] as String? ?? json['result'] as String? ?? '0 - 0',
@@ -36,24 +34,20 @@ class MatchInfo {
       redCardsB: json['redCardsB'] as int? ?? 0,
       yellowCardsA: json['yellowCardsA'] as int? ?? 0,
       yellowCardsB: json['yellowCardsB'] as int? ?? 0,
-      teamALogoUrl: json['teamALogoUrl'] as String? ?? json['homeLogo'] as String?,
-      teamBLogoUrl: json['teamBLogoUrl'] as String? ?? json['awayLogo'] as String?,
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'teamA': teamA,
-      'teamB': teamB,
-      'score': score,
-      'kickOffTime': kickOffTime,
-      'status': status,
-      'redCardsA': redCardsA,
-      'redCardsB': redCardsB,
-      'yellowCardsA': yellowCardsA,
-      'yellowCardsB': yellowCardsB,
-      'teamALogoUrl': teamALogoUrl,
-      'teamBLogoUrl': teamBLogoUrl,
-    };
+  MatchInfo toDomain() {
+    return MatchInfo(
+      teamA: teamA,
+      teamB: teamB,
+      score: score,
+      kickOffTime: kickOffTime,
+      status: status,
+      redCardsA: redCardsA,
+      redCardsB: redCardsB,
+      yellowCardsA: yellowCardsA,
+      yellowCardsB: yellowCardsB,
+    );
   }
 }
