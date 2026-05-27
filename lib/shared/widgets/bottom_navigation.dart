@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-class FoverBottomNavBar extends StatelessWidget {
-  const FoverBottomNavBar({
+class FoverBottomNavigationBar extends StatelessWidget {
+  const FoverBottomNavigationBar({
     super.key,
     required this.selectedIndex,
     required this.onTap,

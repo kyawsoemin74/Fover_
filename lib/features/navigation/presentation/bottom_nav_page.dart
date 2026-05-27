@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:fover/shared/widgets/bottom_nav.dart';
+import 'package:fover/shared/widgets/bottom_navigation.dart';
 
 class BottomNavPage extends StatelessWidget {
   const BottomNavPage({
@@ -30,7 +30,7 @@ class BottomNavPage extends StatelessWidget {
 
     return Scaffold(
       body: SafeArea(child: child),
-      bottomNavigationBar: FoverBottomNavBar(
+      bottomNavigationBar: FoverBottomNavigationBar(
         selectedIndex: selectedIndex,
         onTap: (index) {
           context.go(_routes[index]);

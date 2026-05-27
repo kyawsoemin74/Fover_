@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fover/core/providers/navigation_provider.dart';
+import 'package:fover/features/home/domain/models/league_model.dart';
+import 'package:fover/features/home/domain/models/match_model.dart';
 import 'package:fover/shared/widgets/custom_appbar.dart';
 import 'package:fover/shared/widgets/date_selector.dart';
-import 'package:fover/shared/widgets/empty_following.dart';
+import 'package:fover/shared/widgets/empty_state.dart';
 import 'package:fover/shared/widgets/league_card.dart';
 import 'package:fover/shared/widgets/match_card.dart';
 
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
+
+  static const _sectionPadding = EdgeInsets.symmetric(horizontal: 16);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -20,14 +24,16 @@ class HomePage extends ConsumerWidget {
       physics: const BouncingScrollPhysics(),
       slivers: [
         SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: const EdgeInsets.only(left: 16, right: 16, top: 16),
           sliver: SliverToBoxAdapter(
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 CustomAppBar(
-                  title: 'Live matches',
-                  onCalendar: () {},
+                  title: 'Fover',
+                  subtitle: 'Live matches',
                   onNotifications: () {},
+                  onCalendar: () {},
                   onSearch: () {},
                   onMenu: () {},
                 ),
@@ -47,18 +53,28 @@ class HomePage extends ConsumerWidget {
                   },
                 ),
                 const SizedBox(height: 14),
-                EmptyFollowing(
-                  isExpanded: showFollowing,
-                  onToggle: () {
-                    ref.read(showFollowingProvider.notifier).state = !showFollowing;
-                  },
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 280),
+                  switchInCurve: Curves.easeOutCubic,
+                  switchOutCurve: Curves.easeInCubic,
+                  child: EmptyState(
+                    key: ValueKey(showFollowing),
+                    title: showFollowing ? 'No followed matches yet' : 'Following section hidden',
+                    message: showFollowing
+                        ? 'Add teams and leagues to keep your personalised live score feed in view.'
+                        : 'Restore the following section to resume updates from teams and competitions you care about.',
+                    actionLabel: showFollowing ? 'Hide section' : 'Show section',
+                    onAction: () {
+                      ref.read(showFollowingProvider.notifier).state = !showFollowing;
+                    },
+                  ),
                 ),
               ],
             ),
           ),
         ),
         SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: const EdgeInsets.only(left: 16, right: 16, top: 24, bottom: 8),
           sliver: SliverToBoxAdapter(
             child: _SectionHeader(
               title: 'Competitions',
@@ -68,41 +84,43 @@ class HomePage extends ConsumerWidget {
           ),
         ),
         SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: _sectionPadding,
           sliver: SliverList(
             delegate: SliverChildBuilderDelegate(
               (context, index) {
-                final group = _leagueGroups[index];
-                final expanded = expandedLeagueIds.contains(group.id);
+                final league = _leagueGroups[index];
+                final expanded = expandedLeagueIds.contains(league.id);
 
                 return LeagueCard(
-                  countryCode: group.countryCode,
-                  leagueName: group.leagueName,
-                  matchCount: group.matches.length,
+                  countryCode: league.countryCode,
+                  leagueName: league.leagueName,
+                  matchCount: league.matches.length,
                   expanded: expanded,
                   onToggle: () {
                     ref.read(expandedLeagueIdsProvider.notifier).update(
                           (state) {
                             final next = Set<String>.from(state);
-                            if (next.contains(group.id)) {
-                              next.remove(group.id);
+                            if (next.contains(league.id)) {
+                              next.remove(league.id);
                             } else {
-                              next.add(group.id);
+                              next.add(league.id);
                             }
                             return next;
                           },
                         );
                   },
-                  matches: group.matches
+                  matches: league.matches
                       .map(
                         (match) => MatchCard(
                           teamA: match.teamA,
                           teamB: match.teamB,
                           score: match.score,
-                          matchTime: match.matchTime,
+                          kickOffTime: match.kickOffTime,
                           status: match.status,
                           redCardsA: match.redCardsA,
                           redCardsB: match.redCardsB,
+                          yellowCardsA: match.yellowCardsA,
+                          yellowCardsB: match.yellowCardsB,
                         ),
                       )
                       .toList(),
@@ -113,7 +131,7 @@ class HomePage extends ConsumerWidget {
           ),
         ),
         const SliverPadding(
-          padding: EdgeInsets.symmetric(vertical: 24),
+          padding: EdgeInsets.only(bottom: 32),
         ),
       ],
     );
@@ -151,91 +169,61 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-class _LeagueGroup {
-  const _LeagueGroup({
-    required this.id,
-    required this.countryCode,
-    required this.leagueName,
-    required this.matches,
-  });
-
-  final String id;
-  final String countryCode;
-  final String leagueName;
-  final List<_MatchInfo> matches;
-}
-
-class _MatchInfo {
-  const _MatchInfo({
-    required this.teamA,
-    required this.teamB,
-    required this.score,
-    required this.matchTime,
-    required this.status,
-    this.redCardsA = 0,
-    this.redCardsB = 0,
-  });
-
-  final String teamA;
-  final String teamB;
-  final String score;
-  final String matchTime;
-  final String status;
-  final int redCardsA;
-  final int redCardsB;
-}
-
 const _leagueGroups = [
-  _LeagueGroup(
+  LeagueInfo(
     id: 'premier-league',
     countryCode: 'ENG',
     leagueName: 'Premier League',
     matches: [
-      _MatchInfo(
+      MatchInfo(
         teamA: 'Manchester Utd',
         teamB: 'Liverpool',
         score: '1 - 2',
-        matchTime: '72',
+        kickOffTime: '72',
         status: 'LIVE',
         redCardsA: 0,
         redCardsB: 1,
+        yellowCardsA: 1,
+        yellowCardsB: 0,
       ),
-      _MatchInfo(
+      MatchInfo(
         teamA: 'Chelsea',
         teamB: 'Arsenal',
         score: '0 - 0',
-        matchTime: 'HT',
+        kickOffTime: 'HT',
         status: 'HT',
       ),
     ],
   ),
-  _LeagueGroup(
+  LeagueInfo(
     id: 'la-liga',
     countryCode: 'ESP',
     leagueName: 'La Liga',
     matches: [
-      _MatchInfo(
+      MatchInfo(
         teamA: 'Barcelona',
         teamB: 'Real Madrid',
         score: '2 - 1',
-        matchTime: 'FT',
+        kickOffTime: 'FT',
         status: 'FT',
       ),
     ],
   ),
-  _LeagueGroup(
+  LeagueInfo(
     id: 'champions-league',
     countryCode: 'EU',
     leagueName: 'Champions League',
     matches: [
-      _MatchInfo(
+      MatchInfo(
         teamA: 'Bayern',
         teamB: 'PSG',
         score: '3 - 3',
-        matchTime: '88',
+        kickOffTime: '88',
         status: 'LIVE',
         redCardsA: 1,
         redCardsB: 0,
+        yellowCardsA: 1,
+        yellowCardsB: 2,
       ),
     ],
   ),
