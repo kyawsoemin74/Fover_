@@ -1,0 +1,26 @@
+import 'package:dio/dio.dart';
+import 'package:fover/core/constants/api_constants.dart';
+import 'package:fover/core/network/api_result.dart';
+import 'package:fover/core/network/dio_client.dart';
+import 'package:fover/features/teams/domain/models/team_model.dart';
+
+class TeamApiService {
+  TeamApiService(this._dioClient);
+
+  final DioClient _dioClient;
+
+  Future<ApiResult<TeamInfo>> fetchTeam(int teamId) async {
+    try {
+      final response = await _dioClient.dio.get(ApiConstants.teamById(teamId));
+      final payload = response.data;
+      if (payload is Map<String, dynamic>) {
+        return ApiResult.success(TeamInfo.fromJson(payload));
+      }
+      return ApiResult.failure('Invalid team payload received from server.');
+    } on DioException catch (exception, stackTrace) {
+      return ApiResult.failure(exception.message ?? 'Unable to load team data', stackTrace);
+    } catch (error, stackTrace) {
+      return ApiResult.failure(error.toString(), stackTrace);
+    }
+  }
+}

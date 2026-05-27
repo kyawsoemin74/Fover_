@@ -26,18 +26,22 @@ class MatchInfo {
   final String? teamBLogoUrl;
 
   factory MatchInfo.fromJson(Map<String, dynamic> json) {
+    final homeScore = _parseInt(json['home_score'] ?? json['homeScore'] ?? json['home'] ?? 0);
+    final awayScore = _parseInt(json['away_score'] ?? json['awayScore'] ?? json['away'] ?? 0);
+    final scoreValue = json['score'] as String? ?? json['result'] as String? ?? '$homeScore - $awayScore';
+
     return MatchInfo(
-      teamA: json['teamA'] as String? ?? json['homeTeam'] as String? ?? '',
-      teamB: json['teamB'] as String? ?? json['awayTeam'] as String? ?? '',
-      score: json['score'] as String? ?? json['result'] as String? ?? '0 - 0',
-      kickOffTime: json['kickOffTime'] as String? ?? json['time'] as String? ?? '',
+      teamA: json['teamA'] as String? ?? json['homeTeam'] as String? ?? json['home_team'] as String? ?? '',
+      teamB: json['teamB'] as String? ?? json['awayTeam'] as String? ?? json['away_team'] as String? ?? '',
+      score: scoreValue,
+      kickOffTime: json['kickOffTime'] as String? ?? json['time'] as String? ?? json['match_time'] as String? ?? '',
       status: json['status'] as String? ?? json['matchStatus'] as String? ?? 'UPCOMING',
       redCardsA: json['redCardsA'] as int? ?? 0,
       redCardsB: json['redCardsB'] as int? ?? 0,
       yellowCardsA: json['yellowCardsA'] as int? ?? 0,
       yellowCardsB: json['yellowCardsB'] as int? ?? 0,
-      teamALogoUrl: json['teamALogoUrl'] as String? ?? json['homeLogo'] as String?,
-      teamBLogoUrl: json['teamBLogoUrl'] as String? ?? json['awayLogo'] as String?,
+      teamALogoUrl: json['teamALogoUrl'] as String? ?? json['home_team_logo'] as String? ?? json['homeLogo'] as String?,
+      teamBLogoUrl: json['teamBLogoUrl'] as String? ?? json['away_team_logo'] as String? ?? json['awayLogo'] as String?,
     );
   }
 
@@ -55,5 +59,11 @@ class MatchInfo {
       'teamALogoUrl': teamALogoUrl,
       'teamBLogoUrl': teamBLogoUrl,
     };
+  }
+
+  static int _parseInt(dynamic value) {
+    if (value is int) return value;
+    if (value is String) return int.tryParse(value) ?? 0;
+    return 0;
   }
 }

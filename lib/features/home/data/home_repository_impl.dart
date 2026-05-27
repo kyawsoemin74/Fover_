@@ -14,6 +14,7 @@ class HomeRepositoryImpl implements HomeRepository {
 
   final MatchApiService _apiService;
   static const _cacheBoxName = 'home_match_cache';
+  static const _liveCacheKey = 'live_all';
 
   @override
   Future<ApiResult<List<LeagueInfo>>> fetchLeagueMatches(
@@ -25,32 +26,19 @@ class HomeRepositoryImpl implements HomeRepository {
 
     if (!forceRefresh) {
       final cached = box.get(cacheKey);
-      if (cached is Map<String, dynamic>) {
-        final cachedDate = cached['cachedAt'] as String?;
-        if (cachedDate != null && !_isExpired(cachedDate)) {
-          final payload = cached['payload'];
-          if (payload is List) {
-            final leagues = payload
-                .map((item) => LeagueInfo.fromJson(Map<String, dynamic>.from(item as Map)))
-                .toList();
-            return ApiResult.success(leagues);
-          }
-        }
+      final cachedData = _readCachedLeagues(cached);
+      if (cachedData != null) {
+        return ApiResult.success(cachedData);
       }
     }
 
-    final result = await _apiService.fetchLeagueMatches(date);
+    final result = await _apiService.fetchMatchesByDate(date);
     if (!result.isSuccess) {
       if (!forceRefresh) {
         final cached = box.get(cacheKey);
-        if (cached is Map<String, dynamic>) {
-          final payload = cached['payload'];
-          if (payload is List) {
-            final leagues = payload
-                .map((item) => LeagueInfo.fromJson(Map<String, dynamic>.from(item as Map)))
-                .toList();
-            return ApiResult.success(leagues);
-          }
+        final cachedData = _readCachedLeagues(cached);
+        if (cachedData != null) {
+          return ApiResult.success(cachedData);
         }
       }
       return ApiResult.failure(result.error ?? 'Unknown error');
@@ -65,6 +53,37 @@ class HomeRepositoryImpl implements HomeRepository {
     return ApiResult.success(leagues);
   }
 
+  Future<ApiResult<List<LeagueInfo>>> fetchLiveMatches({bool forceRefresh = false}) async {
+    final box = await _openCacheBox();
+
+    if (!forceRefresh) {
+      final cached = box.get(_liveCacheKey);
+      final cachedData = _readCachedLeagues(cached);
+      if (cachedData != null) {
+        return ApiResult.success(cachedData);
+      }
+    }
+
+    final result = await _apiService.fetchLiveMatches();
+    if (!result.isSuccess) {
+      if (!forceRefresh) {
+        final cached = box.get(_liveCacheKey);
+        final cachedData = _readCachedLeagues(cached);
+        if (cachedData != null) {
+          return ApiResult.success(cachedData);
+        }
+      }
+      return ApiResult.failure(result.error ?? 'Unknown error');
+    }
+
+    final leagues = result.data!.map((league) => league.toDomain()).toList();
+    await box.put(_liveCacheKey, {
+      'cachedAt': DateTime.now().toIso8601String(),
+      'payload': leagues.map((league) => league.toJson()).toList(),
+    });
+    return ApiResult.success(leagues);
+  }
+
   Future<Box<dynamic>> _openCacheBox() async {
     if (HiveService.instance.boxExists(_cacheBoxName)) {
       return HiveService.instance.openBox<dynamic>(_cacheBoxName);
@@ -74,6 +93,21 @@ class HomeRepositoryImpl implements HomeRepository {
 
   String _cacheKey(DateTime date) {
     return DateFormat('yyyy-MM-dd').format(date);
+  }
+
+  List<LeagueInfo>? _readCachedLeagues(Object? cached) {
+    if (cached is Map<String, dynamic>) {
+      final cachedDate = cached['cachedAt'] as String?;
+      if (cachedDate != null && !_isExpired(cachedDate)) {
+        final payload = cached['payload'];
+        if (payload is List) {
+          return payload
+              .map((item) => LeagueInfo.fromJson(Map<String, dynamic>.from(item as Map)))
+              .toList();
+        }
+      }
+    }
+    return null;
   }
 
   bool _isExpired(String cachedAt) {

@@ -18,10 +18,10 @@ class LeagueResponseModel {
 
   factory LeagueResponseModel.fromJson(Map<String, dynamic> json) {
     return LeagueResponseModel(
-      id: json['id'] as String? ?? json['leagueId'] as String? ?? '',
-      countryCode: json['countryCode'] as String? ?? '',
-      countryFlagUrl: json['countryFlagUrl'] as String?,
-      leagueName: json['leagueName'] as String? ?? json['name'] as String? ?? '',
+      id: json['id'] as String? ?? json['leagueId']?.toString() ?? '',
+      countryCode: json['countryCode'] as String? ?? json['country_name'] as String? ?? '',
+      countryFlagUrl: json['countryFlagUrl'] as String? ?? json['country_logo'] as String?,
+      leagueName: json['leagueName'] as String? ?? json['league_name'] as String? ?? json['name'] as String? ?? '',
       matches: (json['matches'] as List<dynamic>?)
               ?.map((match) => MatchResponseModel.fromJson(Map<String, dynamic>.from(match as Map)))
               .toList() ??

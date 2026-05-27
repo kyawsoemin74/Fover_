@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fover/core/network/api_result.dart';
 import 'package:fover/core/providers/navigation_provider.dart';
@@ -18,9 +20,11 @@ final homeProvider = StateNotifierProvider<HomeNotifier, HomeState>((ref) {
 class HomeNotifier extends StateNotifier<HomeState> {
   HomeNotifier(this._repository) : super(const HomeState()) {
     loadMatches();
+    _initializeLiveRefresh();
   }
 
   final HomeRepository _repository;
+  Timer? _liveRefreshTimer;
 
   Future<void> loadMatches() async {
     state = state.copyWith(status: HomeStatus.loading, errorMessage: null);
@@ -66,6 +70,69 @@ class HomeNotifier extends StateNotifier<HomeState> {
     _handleResult(result);
   }
 
+  void _initializeLiveRefresh() {
+    _liveRefreshTimer = Timer.periodic(const Duration(seconds: 30), (_) async {
+      if (state.selectedTab == FoverDateTab.today && state.status == HomeStatus.loaded) {
+        await _refreshLiveMatches();
+      }
+    });
+  }
+
+  Future<void> _refreshLiveMatches() async {
+    final result = await _repository.fetchLeagueMatches(
+      state.selectedTab.dateFor(DateTime.now()),
+      forceRefresh: true,
+    );
+    _handlePeriodicResult(result);
+  }
+
+  void _handlePeriodicResult(ApiResult<List<LeagueInfo>> result) {
+    if (!result.isSuccess) {
+      return;
+    }
+
+    final leagues = result.data ?? const [];
+    if (!_hasLeagueDataChanged(state.leagues, leagues)) {
+      return;
+    }
+
+    final nextStatus = leagues.isEmpty ? HomeStatus.empty : HomeStatus.loaded;
+    state = state.copyWith(
+      status: nextStatus,
+      leagues: leagues,
+      isRefreshing: false,
+    );
+  }
+
+  bool _hasLeagueDataChanged(List<LeagueInfo> current, List<LeagueInfo> next) {
+    if (current.length != next.length) return true;
+    for (var i = 0; i < current.length; i++) {
+      final currentLeague = current[i];
+      final nextLeague = next[i];
+      if (currentLeague.id != nextLeague.id ||
+          currentLeague.leagueName != nextLeague.leagueName ||
+          currentLeague.countryFlagUrl != nextLeague.countryFlagUrl ||
+          currentLeague.matches.length != nextLeague.matches.length) {
+        return true;
+      }
+
+      for (var j = 0; j < currentLeague.matches.length; j++) {
+        final currentMatch = currentLeague.matches[j];
+        final nextMatch = nextLeague.matches[j];
+        if (currentMatch.teamA != nextMatch.teamA ||
+            currentMatch.teamB != nextMatch.teamB ||
+            currentMatch.score != nextMatch.score ||
+            currentMatch.status != nextMatch.status ||
+            currentMatch.kickOffTime != nextMatch.kickOffTime ||
+            currentMatch.teamALogoUrl != nextMatch.teamALogoUrl ||
+            currentMatch.teamBLogoUrl != nextMatch.teamBLogoUrl) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
   void _handleResult(
     final ApiResult<List<LeagueInfo>> result, {
     bool refreshing = false,
@@ -85,5 +152,11 @@ class HomeNotifier extends StateNotifier<HomeState> {
         isRefreshing: false,
       );
     }
+  }
+
+  @override
+  void dispose() {
+    _liveRefreshTimer?.cancel();
+    super.dispose();
   }
 }
