@@ -8,9 +8,15 @@ final matchDetailRepositoryProvider = Provider<MatchDetailRepository>((ref) {
   return MatchDetailRepositoryImpl(dioClient: DioClient());
 });
 
-final matchDetailProvider = StateNotifierProvider.autoDispose<MatchDetailNotifier, MatchDetailState>((ref) {
+final matchDetailProvider = StateNotifierProvider.autoDispose.family<MatchDetailNotifier, MatchDetailState, int>((ref, matchId) {
   final repository = ref.watch(matchDetailRepositoryProvider);
-  return MatchDetailNotifier(repository);
+  final notifier = MatchDetailNotifier(repository);
+
+  if (matchId > 0) {
+    Future.microtask(() => notifier.loadMatch(matchId));
+  }
+
+  return notifier;
 });
 
 class MatchDetailNotifier extends StateNotifier<MatchDetailState> {
@@ -44,34 +50,6 @@ class MatchDetailNotifier extends StateNotifier<MatchDetailState> {
         errorMessage: result.error,
         isRefreshing: false,
       );
-    }
-  }
-
-  Future<void> loadEvents(int matchId) async {
-    final result = await _repository.fetchMatchEvents(matchId);
-    if (result.isSuccess) {
-      state = state.copyWith(events: result.data);
-    }
-  }
-
-  Future<void> loadLineup(int matchId) async {
-    final result = await _repository.fetchMatchLineup(matchId);
-    if (result.isSuccess) {
-      state = state.copyWith(lineup: result.data);
-    }
-  }
-
-  Future<void> loadOdds(int matchId) async {
-    final result = await _repository.fetchMatchOdds(matchId);
-    if (result.isSuccess) {
-      state = state.copyWith(odds: result.data);
-    }
-  }
-
-  Future<void> loadH2H(int matchId, int homeTeamId, int awayTeamId) async {
-    final result = await _repository.fetchMatchH2H(matchId, homeTeamId, awayTeamId);
-    if (result.isSuccess) {
-      state = state.copyWith(h2h: result.data);
     }
   }
 }

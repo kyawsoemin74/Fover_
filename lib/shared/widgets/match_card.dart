@@ -15,6 +15,7 @@ class MatchCard extends StatelessWidget {
     this.yellowCardsB = 0,
     this.teamALogoUrl,
     this.teamBLogoUrl,
+    this.onTap,
   });
 
   final String teamA;
@@ -28,63 +29,72 @@ class MatchCard extends StatelessWidget {
   final int yellowCardsB;
   final String? teamALogoUrl;
   final String? teamBLogoUrl;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isLive = status == 'LIVE';
 
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Column(
-              children: [
-                _TeamRow(
-                  teamName: teamA,
-                  redCards: redCardsA,
-                  yellowCards: yellowCardsA,
-                  logoUrl: teamALogoUrl,
-                ),
-                const SizedBox(height: 14),
-                _TeamRow(
-                  teamName: teamB,
-                  redCards: redCardsB,
-                  yellowCards: yellowCardsB,
-                  logoUrl: teamBLogoUrl,
-                ),
-              ],
-            ),
+        child: Container(
+          margin: const EdgeInsets.symmetric(vertical: 8),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(20),
           ),
-          const SizedBox(width: 16),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                score,
-                style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
+              Expanded(
+                child: Column(
+                  children: [
+                    _TeamRow(
+                      teamName: teamA,
+                      redCards: redCardsA,
+                      yellowCards: yellowCardsA,
+                      logoUrl: teamALogoUrl,
                     ),
+                    const SizedBox(height: 14),
+                    _TeamRow(
+                      teamName: teamB,
+                      redCards: redCardsB,
+                      yellowCards: yellowCardsB,
+                      logoUrl: teamBLogoUrl,
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 8),
-              _StatusBadge(status: status, isLive: isLive),
-              const SizedBox(height: 8),
-              Text(
-                kickOffTime,
-                style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
+              const SizedBox(width: 16),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    score,
+                    style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                  const SizedBox(height: 8),
+                  _StatusBadge(status: status, isLive: isLive),
+                  const SizedBox(height: 8),
+                  Text(
+                    kickOffTime,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                  ),
+                ],
               ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }

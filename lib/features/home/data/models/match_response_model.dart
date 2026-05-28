@@ -3,6 +3,9 @@ import 'package:fover/features/home/domain/models/match_model.dart';
 
 class MatchResponseModel {
   MatchResponseModel({
+    required this.matchId,
+    required this.homeTeamId,
+    required this.awayTeamId,
     required this.teamA,
     required this.teamB,
     required this.score,
@@ -16,6 +19,9 @@ class MatchResponseModel {
     this.teamBLogoUrl,
   });
 
+  final int matchId;
+  final int homeTeamId;
+  final int awayTeamId;
   final String teamA;
   final String teamB;
   final String score;
@@ -35,6 +41,9 @@ class MatchResponseModel {
     final localTime = _formatLocalTime(rawKickOff);
 
     return MatchResponseModel(
+      matchId: _parseId(json['match_id'] ?? json['matchId'] ?? json['id']),
+      homeTeamId: _parseId(json['home_team_id'] ?? json['homeTeamId'] ?? json['team1_id'] ?? json['homeTeamId']),
+      awayTeamId: _parseId(json['away_team_id'] ?? json['awayTeamId'] ?? json['team2_id'] ?? json['awayTeamId']),
       teamA: json['home_team'] as String? ?? json['teamA'] as String? ?? '',
       teamB: json['away_team'] as String? ?? json['teamB'] as String? ?? '',
       score: json['score'] as String? ?? json['result'] as String? ?? '$homeScore - $awayScore',
@@ -51,6 +60,9 @@ class MatchResponseModel {
 
   MatchInfo toDomain() {
     return MatchInfo(
+      matchId: matchId,
+      homeTeamId: homeTeamId,
+      awayTeamId: awayTeamId,
       teamA: teamA,
       teamB: teamB,
       score: score,
@@ -66,6 +78,12 @@ class MatchResponseModel {
   }
 
   static int _parseInt(dynamic value) {
+    if (value is int) return value;
+    if (value is String) return int.tryParse(value) ?? 0;
+    return 0;
+  }
+
+  static int _parseId(dynamic value) {
     if (value is int) return value;
     if (value is String) return int.tryParse(value) ?? 0;
     return 0;

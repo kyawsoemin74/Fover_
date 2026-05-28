@@ -101,6 +101,17 @@ class MatchApiService {
     }
   }
 
+  Future<ApiResult<dynamic>> fetchMatchStats(int matchId) async {
+    try {
+      final response = await _execute(() => _dioClient.dio.get(ApiConstants.matchById(matchId)));
+      return ApiResult.success(response.data);
+    } on DioException catch (exception, stackTrace) {
+      return ApiResult.failure(_extractError(exception), stackTrace);
+    } catch (error, stackTrace) {
+      return ApiResult.failure(error.toString(), stackTrace);
+    }
+  }
+
   Future<Response> _execute(Future<Response> Function() request) async {
     var attempt = 0;
     while (true) {

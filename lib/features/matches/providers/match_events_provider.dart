@@ -1,0 +1,56 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:fover/features/matches/domain/match_detail_repository.dart';
+import 'package:fover/features/matches/domain/models/match_event_model.dart';
+import 'package:fover/features/matches/providers/match_detail_provider.dart';
+
+enum MatchEventsStatus { initial, loading, loaded, error }
+
+class MatchEventsState {
+  const MatchEventsState({
+    this.status = MatchEventsStatus.initial,
+    this.events = const [],
+    this.errorMessage,
+  });
+
+  final MatchEventsStatus status;
+  final List<MatchEventInfo> events;
+  final String? errorMessage;
+
+  MatchEventsState copyWith({
+    MatchEventsStatus? status,
+    List<MatchEventInfo>? events,
+    String? errorMessage,
+  }) {
+    return MatchEventsState(
+      status: status ?? this.status,
+      events: events ?? this.events,
+      errorMessage: errorMessage ?? this.errorMessage,
+    );
+  }
+}
+
+class MatchEventsNotifier extends StateNotifier<MatchEventsState> {
+  MatchEventsNotifier(this._repository, this._matchId) : super(const MatchEventsState());
+
+  final MatchDetailRepository _repository;
+  final int _matchId;
+
+  Future<void> loadEvents() async {
+    if (state.status == MatchEventsStatus.loading) return;
+
+    state = state.copyWith(status: MatchEventsStatus.loading, errorMessage: null);
+    final result = await _repository.fetchMatchEvents(_matchId);
+    if (result.isSuccess) {
+      state = state.copyWith(status: MatchEventsStatus.loaded, events: result.data ?? const []);
+    } else {
+      state = state.copyWith(status: MatchEventsStatus.error, errorMessage: result.error);
+    }
+  }
+}
+
+final matchEventsProvider = StateNotifierProvider.autoDispose.family<MatchEventsNotifier, MatchEventsState, int>(
+  (ref, matchId) {
+    final repository = ref.watch(matchDetailRepositoryProvider);
+    return MatchEventsNotifier(repository, matchId);
+  },
+);
