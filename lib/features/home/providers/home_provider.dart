@@ -1,8 +1,8 @@
 import 'dart:async';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fover/core/network/api_result.dart';
-import 'package:fover/core/providers/navigation_provider.dart';
 import 'package:fover/features/home/data/home_repository_impl.dart';
 import 'package:fover/features/home/domain/home_repository.dart';
 import 'package:fover/features/home/domain/models/league_model.dart';
@@ -18,7 +18,7 @@ final homeProvider = StateNotifierProvider<HomeNotifier, HomeState>((ref) {
 });
 
 class HomeNotifier extends StateNotifier<HomeState> {
-  HomeNotifier(this._repository) : super(const HomeState()) {
+  HomeNotifier(this._repository) : super(HomeState()) {
     loadMatches();
     _initializeLiveRefresh();
   }
@@ -28,13 +28,13 @@ class HomeNotifier extends StateNotifier<HomeState> {
 
   Future<void> loadMatches() async {
     state = state.copyWith(status: HomeStatus.loading, errorMessage: null);
-    await _loadMatchesForDate(state.selectedTab.dateFor(DateTime.now()));
+    await _loadMatchesForDate(state.selectedDate);
   }
 
   Future<void> refresh() async {
     state = state.copyWith(isRefreshing: true, errorMessage: null);
     final result = await _repository.fetchLeagueMatches(
-      state.selectedTab.dateFor(DateTime.now()),
+      state.selectedDate,
       forceRefresh: true,
     );
     _handleResult(result, refreshing: true);
@@ -54,15 +54,15 @@ class HomeNotifier extends StateNotifier<HomeState> {
     state = state.copyWith(expandedLeagueIds: next);
   }
 
-  Future<void> selectDate(FoverDateTab tab) async {
-    if (tab == state.selectedTab) return;
-    state = state.copyWith(selectedTab: tab, status: HomeStatus.loading, errorMessage: null);
-    await _loadMatchesForDate(tab.dateFor(DateTime.now()));
+  Future<void> selectDate(DateTime date) async {
+    if (DateUtils.isSameDay(date, state.selectedDate)) return;
+    state = state.copyWith(selectedDate: date, status: HomeStatus.loading, errorMessage: null);
+    await _loadMatchesForDate(date);
   }
 
   Future<void> retry() async {
     state = state.copyWith(status: HomeStatus.loading, errorMessage: null);
-    await _loadMatchesForDate(state.selectedTab.dateFor(DateTime.now()));
+    await _loadMatchesForDate(state.selectedDate);
   }
 
   Future<void> _loadMatchesForDate(DateTime date) async {
@@ -72,7 +72,7 @@ class HomeNotifier extends StateNotifier<HomeState> {
 
   void _initializeLiveRefresh() {
     _liveRefreshTimer = Timer.periodic(const Duration(seconds: 30), (_) async {
-      if (state.selectedTab == FoverDateTab.today && state.status == HomeStatus.loaded) {
+      if (DateUtils.isSameDay(state.selectedDate, DateTime.now()) && state.status == HomeStatus.loaded) {
         await _refreshLiveMatches();
       }
     });
@@ -80,7 +80,7 @@ class HomeNotifier extends StateNotifier<HomeState> {
 
   Future<void> _refreshLiveMatches() async {
     final result = await _repository.fetchLeagueMatches(
-      state.selectedTab.dateFor(DateTime.now()),
+      state.selectedDate,
       forceRefresh: true,
     );
     _handlePeriodicResult(result);

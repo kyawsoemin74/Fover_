@@ -30,11 +30,9 @@ class HomePage extends ConsumerWidget {
           SliverPersistentHeader(
             pinned: true,
             delegate: HomeTopHeaderDelegate(
-              minExtent: 160,
-              maxExtent: 160,
+              minExtent: 138,
+              maxExtent: 138,
               child: HomeTopSection(
-                selectedTab: homeState.selectedTab,
-                onTabSelected: homeNotifier.selectDate,
                 onNotifications: () {},
                 onCalendar: () {},
                 onSearch: () {},
@@ -106,8 +104,8 @@ class HomePage extends ConsumerWidget {
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24),
                 child: EmptyState(
-                  title: 'No matches available',
-                  message: 'There are no live or scheduled matches for the selected date.',
+                  title: 'No Matches',
+                  message: 'No matches were found for the selected date. Try another day or pull to refresh.',
                   actionLabel: 'Refresh',
                   onAction: homeNotifier.retry,
                 ),

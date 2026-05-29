@@ -1,68 +1,65 @@
 import 'package:flutter/material.dart';
-import 'package:fover/core/providers/navigation_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:fover/features/home/providers/date_selection_provider.dart';
+import 'package:fover/features/home/providers/home_provider.dart';
 
-class HomeTopSection extends StatelessWidget {
+class HomeTopSection extends ConsumerWidget {
   const HomeTopSection({
     super.key,
-    required this.selectedTab,
-    required this.onTabSelected,
     this.onNotifications,
     this.onCalendar,
     this.onSearch,
     this.onMenu,
   });
 
-  final FoverDateTab selectedTab;
-  final ValueChanged<FoverDateTab> onTabSelected;
   final VoidCallback? onNotifications;
   final VoidCallback? onCalendar;
   final VoidCallback? onSearch;
   final VoidCallback? onMenu;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+
     return Material(
       color: theme.colorScheme.surface,
       child: Container(
-        padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+        padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
         decoration: BoxDecoration(
           color: theme.colorScheme.surface,
           boxShadow: [
             BoxShadow(
-              color: theme.colorScheme.shadow.withValues(alpha: 0.07),
+              color: theme.colorScheme.shadow.withAlpha(18),
               blurRadius: 12,
               offset: const Offset(0, 6),
             ),
           ],
         ),
-        child: SingleChildScrollView(
-          physics: const NeverScrollableScrollPhysics(),
-          child: Column(
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Container(
-                  height: 40,
-                  width: 40,
+                  height: 32,
+                  width: 32,
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.primary.withValues(alpha: 0.14),
-                    borderRadius: BorderRadius.circular(14),
+                    color: theme.colorScheme.primary.withAlpha(24),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
                     Icons.sports_soccer,
                     color: theme.colorScheme.primary,
-                    size: 20,
+                    size: 18,
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     'Fover',
                     style: theme.textTheme.titleLarge?.copyWith(
-                      fontSize: 20,
+                      fontSize: 16,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 0.08,
                     ),
@@ -96,49 +93,81 @@ class HomeTopSection extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            HomeDateTabs(
-              selectedTab: selectedTab,
-              onTabSelected: onTabSelected,
-            ),
+            const SizedBox(height: 4),
+            const HomeDateTabs(),
           ],
-        ),
         ),
       ),
     );
   }
 }
 
-class HomeDateTabs extends StatelessWidget {
-  const HomeDateTabs({
-    super.key,
-    required this.selectedTab,
-    required this.onTabSelected,
-  });
+class HomeDateTabs extends ConsumerStatefulWidget {
+  const HomeDateTabs({super.key});
 
-  final FoverDateTab selectedTab;
-  final ValueChanged<FoverDateTab> onTabSelected;
+  @override
+  ConsumerState<HomeDateTabs> createState() => _HomeDateTabsState();
+}
+
+class _HomeDateTabsState extends ConsumerState<HomeDateTabs> {
+  static const double _itemWidth = 68.0;
+  static const double _barHeight = 64.0;
+  static const double _itemSpacing = 4.0;
+  static const double _horizontalPadding = 1.5;
+
+  List<DateTime> _visibleDates(List<DateTime> dates, int selectedIndex) {
+    if (dates.length <= 5) return dates;
+
+    var start = selectedIndex - 2;
+    var end = selectedIndex + 2;
+
+    if (start < 0) {
+      end += -start;
+      start = 0;
+    }
+
+    if (end >= dates.length) {
+      final overflow = end - (dates.length - 1);
+      start -= overflow;
+      end = dates.length - 1;
+      if (start < 0) start = 0;
+    }
+
+    return dates.sublist(start, end + 1);
+  }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final dates = ref.watch(dateRangeProvider);
+    final selectedDate = ref.watch(homeProvider.select((state) => state.selectedDate));
+    final homeNotifier = ref.read(homeProvider.notifier);
 
-    return Container(
-      padding: const EdgeInsets.all(2),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: FoverDateTab.values.map((tab) {
-          return Expanded(
-            child: _DateTabItem(
-              tab: tab,
-              isSelected: selectedTab == tab,
-              onTap: () => onTabSelected(tab),
-            ),
-          );
-        }).toList(),
+    final selectedIndex = dates.indexWhere((d) => DateUtils.isSameDay(d, selectedDate));
+    final visibleDates = selectedIndex != -1 ? _visibleDates(dates, selectedIndex) : dates;
+
+    return SizedBox(
+      height: _barHeight,
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: _horizontalPadding),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (var i = 0; i < visibleDates.length; i++) ...[
+                SizedBox(
+                  width: _itemWidth,
+                  child: _DateTabItem(
+                    date: visibleDates[i],
+                    isSelected: DateUtils.isSameDay(visibleDates[i], selectedDate),
+                    onTap: () => homeNotifier.selectDate(visibleDates[i]),
+                  ),
+                ),
+                if (i < visibleDates.length - 1)
+                  const SizedBox(width: _itemSpacing),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -146,72 +175,94 @@ class HomeDateTabs extends StatelessWidget {
 
 class _DateTabItem extends StatelessWidget {
   const _DateTabItem({
-    required this.tab,
+    required this.date,
     required this.isSelected,
     required this.onTap,
   });
 
-  final FoverDateTab tab;
+  final DateTime date;
   final bool isSelected;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final now = DateTime.now();
+
+    String getDayName(DateTime d) {
+      if (DateUtils.isSameDay(d, DateTime.now())) return 'TODAY';
+      const weekdays = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+      return weekdays[d.weekday - 1];
+    }
+
+    String getMonthName(DateTime d) {
+      const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+      return months[d.month - 1];
+    }
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4),
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 240),
-          curve: Curves.easeOutCubic,
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-          decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFF22C55E) : Colors.transparent,
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                tab.title.toUpperCase(),
-                style: theme.textTheme.labelSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 11,
-                  color: isSelected
-                      ? Colors.white
-                      : theme.colorScheme.onSurface,
-                ),
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          splashColor: theme.colorScheme.primary.withAlpha(24),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOutCubic,
+            padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 6),
+            decoration: BoxDecoration(
+              color: isSelected ? theme.colorScheme.primary.withAlpha(180) : theme.colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: isSelected
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.onSurface.withAlpha(18),
+                width: 1.0,
               ),
-              const SizedBox(height: 4),
-              Text(
-                tab.label(now),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  fontSize: 12,
-                  color: isSelected
-                      ? Colors.white.withValues(alpha: 0.88)
-                      : theme.colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w600,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  getDayName(date),
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    color: isSelected ? theme.colorScheme.onPrimary : theme.colorScheme.onSurface,
+                    letterSpacing: 0.15,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 10),
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 240),
-                curve: Curves.easeOutCubic,
-                height: 4,
-                width: isSelected ? 40 : 20,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  color: isSelected
-                      ? Colors.white
-                      : theme.colorScheme.surface,
+                const SizedBox(height: 2),
+                Text(
+                  '${date.day} ${getMonthName(date)}',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: isSelected
+                        ? theme.colorScheme.onPrimary.withAlpha(230)
+                        : theme.colorScheme.onSurfaceVariant,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-            ],
+                const SizedBox(height: 4),
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeOutCubic,
+                  height: 3,
+                  width: isSelected ? 28 : 16,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(6),
+                    color: isSelected ? theme.colorScheme.onPrimary : theme.colorScheme.surface,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -235,7 +286,7 @@ class _IconAction extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Material(
-      color: theme.colorScheme.onSurface.withValues(alpha: 0.03),
+      color: theme.colorScheme.onSurface.withAlpha(10),
       shape: const CircleBorder(),
       child: IconButton(
         onPressed: onTap,

@@ -1,12 +1,11 @@
-import 'package:fover/core/providers/navigation_provider.dart';
 import 'package:fover/features/home/domain/models/league_model.dart';
 
 enum HomeStatus { initial, loading, loaded, refreshing, empty, error }
 
 class HomeState {
-  const HomeState({
+  HomeState({
     this.status = HomeStatus.initial,
-    this.selectedTab = FoverDateTab.today,
+    DateTime? selectedDate,
     this.expandedLeagueIds = const {'premier-league'},
     this.showFollowing = true,
     this.leagues = const [],
@@ -16,10 +15,15 @@ class HomeState {
     this.pageSize = 20,
     this.hasMore = true,
     this.isFetchingMore = false,
-  });
+  }) : selectedDate = selectedDate ?? _todayDateOnly();
+
+  static DateTime _todayDateOnly() {
+    final now = DateTime.now();
+    return DateTime(now.year, now.month, now.day);
+  }
 
   final HomeStatus status;
-  final FoverDateTab selectedTab;
+  final DateTime selectedDate;
   final Set<String> expandedLeagueIds;
   final bool showFollowing;
   final List<LeagueInfo> leagues;
@@ -34,7 +38,7 @@ class HomeState {
 
   HomeState copyWith({
     HomeStatus? status,
-    FoverDateTab? selectedTab,
+    DateTime? selectedDate,
     Set<String>? expandedLeagueIds,
     bool? showFollowing,
     List<LeagueInfo>? leagues,
@@ -47,7 +51,7 @@ class HomeState {
   }) {
     return HomeState(
       status: status ?? this.status,
-      selectedTab: selectedTab ?? this.selectedTab,
+      selectedDate: selectedDate ?? this.selectedDate,
       expandedLeagueIds: expandedLeagueIds ?? this.expandedLeagueIds,
       showFollowing: showFollowing ?? this.showFollowing,
       leagues: leagues ?? this.leagues,
