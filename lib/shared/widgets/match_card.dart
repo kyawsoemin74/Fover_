@@ -34,196 +34,166 @@ class MatchCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isLive = status == 'LIVE';
+    final normalizedStatus = status.toUpperCase();
+    final isNS = normalizedStatus == 'NS' || normalizedStatus == 'UPCOMING' || normalizedStatus == 'SCHEDULED';
+    final showScore = !isNS && score.isNotEmpty;
+    final scoreParts = _parseScore(score);
+    final statusLabel = _formatStatus(status);
+    final teamBLine = isNS ? teamB : '$statusLabel $teamB';
 
     return Material(
       color: Colors.transparent,
-      borderRadius: BorderRadius.circular(20),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          margin: const EdgeInsets.symmetric(vertical: 8),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
-            borderRadius: BorderRadius.circular(20),
-          ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
+              SizedBox(
+                width: 58,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      kickOffTime,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    if (!isNS) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        statusLabel,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w700,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
               Expanded(
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    _TeamRow(
+                    _TeamLine(
                       teamName: teamA,
-                      redCards: redCardsA,
-                      yellowCards: yellowCardsA,
                       logoUrl: teamALogoUrl,
                     ),
-                    const SizedBox(height: 14),
-                    _TeamRow(
-                      teamName: teamB,
-                      redCards: redCardsB,
-                      yellowCards: yellowCardsB,
+                    const SizedBox(height: 2),
+                    _TeamLine(
+                      teamName: teamBLine,
                       logoUrl: teamBLogoUrl,
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 16),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    score,
-                    style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                  ),
-                  const SizedBox(height: 8),
-                  _StatusBadge(status: status, isLive: isLive),
-                  const SizedBox(height: 8),
-                  Text(
-                    kickOffTime,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                  ),
-                ],
-              ),
+              if (showScore) ...[
+                const SizedBox(width: 10),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      scoreParts[0],
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      scoreParts[1],
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),
       ),
     );
   }
+
+  String _formatStatus(String status) {
+    final normalized = status.toUpperCase();
+    if (normalized == 'LIVE' || normalized == 'HT' || normalized == 'FT') {
+      return normalized;
+    }
+    return status;
+  }
+
+  List<String> _parseScore(String value) {
+    final parts = value.split(RegExp(r'\s*[-:]\s*'));
+    if (parts.length == 2) {
+      return parts;
+    }
+    return [value, ''];
+  }
 }
 
-class _TeamRow extends StatelessWidget {
-  const _TeamRow({
+class _TeamLine extends StatelessWidget {
+  const _TeamLine({
     required this.teamName,
-    required this.redCards,
-    required this.yellowCards,
     this.logoUrl,
   });
 
   final String teamName;
-  final int redCards;
-  final int yellowCards;
   final String? logoUrl;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
     return Row(
       children: [
-        CircleAvatar(
-          radius: 18,
-          backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.22),
-          child: logoUrl != null && logoUrl!.isNotEmpty
-              ? CachedNetworkImage(
-                  imageUrl: logoUrl!,
-                  fit: BoxFit.cover,
-                  width: 28,
-                  height: 28,
-                  errorWidget: (context, url, error) => Text(
-                    teamName.split(' ').map((part) => part.characters.first).take(2).join(),
-                    style: theme.textTheme.labelLarge?.copyWith(
-                          color: theme.colorScheme.primary,
-                          fontWeight: FontWeight.w700,
-                        ),
-                  ),
-                )
-              : Text(
+        if (logoUrl != null && logoUrl!.isNotEmpty) ...[
+          Container(
+            width: 20,
+            height: 20,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: theme.colorScheme.surfaceContainerHighest,
+            ),
+            clipBehavior: Clip.hardEdge,
+            child: CachedNetworkImage(
+              imageUrl: logoUrl!,
+              fit: BoxFit.cover,
+              width: 20,
+              height: 20,
+              errorWidget: (context, url, error) => Center(
+                child: Text(
                   teamName.split(' ').map((part) => part.characters.first).take(2).join(),
-                  style: theme.textTheme.labelLarge?.copyWith(
+                  style: theme.textTheme.labelSmall?.copyWith(
                         color: theme.colorScheme.primary,
                         fontWeight: FontWeight.w700,
                       ),
                 ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            teamName,
-            style: theme.textTheme.bodyLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-          ),
-        ),
-        if (yellowCards > 0) ...[
-          _CardCounter(
-            color: const Color(0xFFFFD300),
-            label: yellowCards.toString(),
+              ),
+            ),
           ),
           const SizedBox(width: 6),
         ],
-        if (redCards > 0)
-          _CardCounter(
-            color: const Color(0xFFEF4444),
-            label: redCards.toString(),
+        Expanded(
+          child: Text(
+            teamName,
+            style: theme.textTheme.bodySmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
+        ),
       ],
-    );
-  }
-}
-
-class _StatusBadge extends StatelessWidget {
-  const _StatusBadge({
-    required this.status,
-    required this.isLive,
-  });
-
-  final String status;
-  final bool isLive;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: isLive ? const Color(0xFFEF4444) : theme.colorScheme.onSurface.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Text(
-        status,
-        style: theme.textTheme.labelSmall?.copyWith(
-              color: isLive ? Colors.white : theme.colorScheme.onSurface,
-              fontWeight: FontWeight.w700,
-            ),
-      ),
-    );
-  }
-}
-
-class _CardCounter extends StatelessWidget {
-  const _CardCounter({
-    required this.color,
-    required this.label,
-  });
-
-  final Color color;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: Colors.black,
-              fontWeight: FontWeight.bold,
-            ),
-      ),
     );
   }
 }

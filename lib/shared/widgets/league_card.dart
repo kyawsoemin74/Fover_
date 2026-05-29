@@ -29,16 +29,12 @@ class LeagueCard extends StatelessWidget {
     return leagueName;
   }
 
-  String get _matchLabel {
-    return matchCount == 1 ? '1 match' : '$matchCount matches';
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
     return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8),
+      margin: const EdgeInsets.symmetric(vertical: 6),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       elevation: 0,
       child: AnimatedSize(
@@ -52,57 +48,42 @@ class LeagueCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(18),
                 onTap: onToggle,
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Container(
-                        width: 44,
-                        height: 44,
+                        width: 36,
+                        height: 36,
                         decoration: BoxDecoration(
                           color: theme.colorScheme.primary.withValues(alpha: 0.14),
                           shape: BoxShape.circle,
                         ),
                         child: ClipOval(
                           child: Center(
-                            child: CountryFlagHelper.buildCountryFlag(countryFlagUrl, size: 24),
+                            child: CountryFlagHelper.buildCountryFlag(countryFlagUrl, size: 20),
                           ),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 10),
                       Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              _leagueLabel,
-                              style: theme.textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.w800,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              _matchLabel,
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
+                        child: Text(
+                          _leagueLabel,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w800,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 10),
                       Container(
-                        width: 30,
-                        height: 30,
+                        width: 26,
+                        height: 26,
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
                           color: theme.colorScheme.onSurface.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
                           '$matchCount',
@@ -117,7 +98,7 @@ class LeagueCard extends StatelessWidget {
                       Icon(
                         expanded ? Icons.expand_less : Icons.expand_more,
                         color: theme.colorScheme.onSurfaceVariant,
-                        size: 22,
+                        size: 20,
                       ),
                     ],
                   ),
@@ -126,7 +107,7 @@ class LeagueCard extends StatelessWidget {
             ),
             if (expanded)
               Padding(
-                padding: const EdgeInsets.only(bottom: 16, left: 14, right: 14),
+                padding: const EdgeInsets.only(bottom: 8, left: 12, right: 12),
                 child: Column(children: matches),
               ),
           ],
