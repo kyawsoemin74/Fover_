@@ -4,6 +4,7 @@ import 'package:fover/core/config/app_config.dart';
 import 'package:fover/core/constants/api_constants.dart';
 import 'package:fover/core/network/api_result.dart';
 import 'package:fover/core/network/dio_client.dart';
+import 'package:fover/core/network/dio_error_mapper.dart';
 import 'package:fover/features/home/data/models/league_response_model.dart';
 import 'package:fover/features/home/data/models/match_response_model.dart';
 import 'package:fover/features/matches/data/models/match_detail_response_model.dart';
@@ -20,7 +21,7 @@ class MatchApiService {
       final leagues = _groupMatches(items);
       return ApiResult.success(leagues);
     } on DioException catch (exception, stackTrace) {
-      return ApiResult.failure(_extractError(exception), stackTrace);
+      return ApiResult.failure(DioErrorMapper.map(exception), stackTrace);
     } catch (error, stackTrace) {
       return ApiResult.failure(error.toString(), stackTrace);
     }
@@ -36,7 +37,7 @@ class MatchApiService {
       final leagues = _groupMatches(items);
       return ApiResult.success(leagues);
     } on DioException catch (exception, stackTrace) {
-      return ApiResult.failure(_extractError(exception), stackTrace);
+      return ApiResult.failure(DioErrorMapper.map(exception), stackTrace);
     } catch (error, stackTrace) {
       return ApiResult.failure(error.toString(), stackTrace);
     }
@@ -51,7 +52,7 @@ class MatchApiService {
       }
       return ApiResult.failure('Unexpected match detail response format.');
     } on DioException catch (exception, stackTrace) {
-      return ApiResult.failure(_extractError(exception), stackTrace);
+      return ApiResult.failure(DioErrorMapper.map(exception), stackTrace);
     } catch (error, stackTrace) {
       return ApiResult.failure(error.toString(), stackTrace);
     }
@@ -62,7 +63,7 @@ class MatchApiService {
       final response = await _execute(() => _dioClient.dio.get(ApiConstants.matchEvents(matchId)));
       return ApiResult.success(response.data);
     } on DioException catch (exception, stackTrace) {
-      return ApiResult.failure(_extractError(exception), stackTrace);
+      return ApiResult.failure(DioErrorMapper.map(exception), stackTrace);
     } catch (error, stackTrace) {
       return ApiResult.failure(error.toString(), stackTrace);
     }
@@ -73,7 +74,7 @@ class MatchApiService {
       final response = await _execute(() => _dioClient.dio.get(ApiConstants.matchLineup(matchId)));
       return ApiResult.success(response.data);
     } on DioException catch (exception, stackTrace) {
-      return ApiResult.failure(_extractError(exception), stackTrace);
+      return ApiResult.failure(DioErrorMapper.map(exception), stackTrace);
     } catch (error, stackTrace) {
       return ApiResult.failure(error.toString(), stackTrace);
     }
@@ -84,7 +85,7 @@ class MatchApiService {
       final response = await _execute(() => _dioClient.dio.get(ApiConstants.matchOdds(matchId)));
       return ApiResult.success(response.data);
     } on DioException catch (exception, stackTrace) {
-      return ApiResult.failure(_extractError(exception), stackTrace);
+      return ApiResult.failure(DioErrorMapper.map(exception), stackTrace);
     } catch (error, stackTrace) {
       return ApiResult.failure(error.toString(), stackTrace);
     }
@@ -95,7 +96,7 @@ class MatchApiService {
       final response = await _execute(() => _dioClient.dio.get(ApiConstants.matchH2H(matchId, homeTeamId, awayTeamId)));
       return ApiResult.success(response.data);
     } on DioException catch (exception, stackTrace) {
-      return ApiResult.failure(_extractError(exception), stackTrace);
+      return ApiResult.failure(DioErrorMapper.map(exception), stackTrace);
     } catch (error, stackTrace) {
       return ApiResult.failure(error.toString(), stackTrace);
     }
@@ -106,7 +107,7 @@ class MatchApiService {
       final response = await _execute(() => _dioClient.dio.get(ApiConstants.matchById(matchId)));
       return ApiResult.success(response.data);
     } on DioException catch (exception, stackTrace) {
-      return ApiResult.failure(_extractError(exception), stackTrace);
+      return ApiResult.failure(DioErrorMapper.map(exception), stackTrace);
     } catch (error, stackTrace) {
       return ApiResult.failure(error.toString(), stackTrace);
     }
@@ -174,13 +175,5 @@ class MatchApiService {
     }).toList();
   }
 
-  String _extractError(DioException error) {
-    if (error.type == DioExceptionType.connectionTimeout || error.type == DioExceptionType.receiveTimeout) {
-      return 'Request timed out. Please check your connection.';
-    }
-    if (error.response != null) {
-      return error.response?.data?.toString() ?? error.message ?? 'Unknown error';
-    }
-    return error.message ?? 'Unknown error';
-  }
 }
+

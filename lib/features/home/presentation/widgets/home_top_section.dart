@@ -110,10 +110,9 @@ class HomeDateTabs extends ConsumerStatefulWidget {
 }
 
 class _HomeDateTabsState extends ConsumerState<HomeDateTabs> {
-  static const double _itemWidth = 68.0;
-  static const double _barHeight = 64.0;
-  static const double _itemSpacing = 4.0;
-  static const double _horizontalPadding = 1.5;
+  static const double _barHeight = 68.0;
+  static const double _itemSpacing = 5.0;
+  static const double _horizontalPadding = 0.5;
 
   List<DateTime> _visibleDates(List<DateTime> dates, int selectedIndex) {
     if (dates.length <= 5) return dates;
@@ -147,26 +146,23 @@ class _HomeDateTabsState extends ConsumerState<HomeDateTabs> {
 
     return SizedBox(
       height: _barHeight,
-      child: Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: _horizontalPadding),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              for (var i = 0; i < visibleDates.length; i++) ...[
-                SizedBox(
-                  width: _itemWidth,
-                  child: _DateTabItem(
-                    date: visibleDates[i],
-                    isSelected: DateUtils.isSameDay(visibleDates[i], selectedDate),
-                    onTap: () => homeNotifier.selectDate(visibleDates[i]),
-                  ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: _horizontalPadding),
+        child: Row(
+          mainAxisSize: MainAxisSize.max,
+          children: [
+            for (var i = 0; i < visibleDates.length; i++) ...[
+              Expanded(
+                child: _DateTabItem(
+                  date: visibleDates[i],
+                  isSelected: DateUtils.isSameDay(visibleDates[i], selectedDate),
+                  onTap: () => homeNotifier.selectDate(visibleDates[i]),
                 ),
-                if (i < visibleDates.length - 1)
-                  const SizedBox(width: _itemSpacing),
-              ],
+              ),
+              if (i < visibleDates.length - 1)
+                const SizedBox(width: _itemSpacing),
             ],
-          ),
+          ],
         ),
       ),
     );

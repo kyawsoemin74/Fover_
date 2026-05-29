@@ -36,10 +36,10 @@ class AdsState {
 }
 
 final adsRepositoryProvider = Provider<AdsRepository>((ref) {
-  return AdsRepositoryImpl(dioClient: DioClient());
+  return AdsRepositoryImpl(dioClient: DioClient(dio: ref.watch(dioProvider)));
 });
 
-final adsProvider = StateNotifierProvider.autoDispose<AdsNotifier, AdsState>((ref) {
+final adsProvider = StateNotifierProvider<AdsNotifier, AdsState>((ref) {
   final repository = ref.watch(adsRepositoryProvider);
   return AdsNotifier(repository);
 });

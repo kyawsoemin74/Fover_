@@ -9,8 +9,8 @@ import 'package:fover/features/home/domain/home_repository.dart';
 import 'package:fover/features/home/domain/models/league_model.dart';
 
 class HomeRepositoryImpl implements HomeRepository {
-  HomeRepositoryImpl({DioClient? dioClient})
-      : _apiService = MatchApiService(dioClient ?? DioClient());
+    HomeRepositoryImpl({DioClient? dioClient})
+      : _apiService = MatchApiService(dioClient ?? DioClient.shared);
 
   final MatchApiService _apiService;
   static const _cacheBoxName = 'home_match_cache';

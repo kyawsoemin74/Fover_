@@ -1,12 +1,20 @@
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fover/core/config/app_config.dart';
+import 'package:fover/core/network/interceptor.dart';
+
+final dioProvider = Provider<Dio>((ref) => DioClient.shared.dio);
 
 class DioClient {
-  DioClient({Dio? dio}) : dio = dio ?? _createDio();
+  DioClient({Dio? dio}) : dio = dio ?? _sharedDio;
 
   final Dio dio;
+
+  static final Dio _sharedDio = _createDio();
+
+  static DioClient get shared => DioClient(dio: _sharedDio);
 
   static Dio _createDio() {
     final options = BaseOptions(
@@ -24,42 +32,11 @@ class DioClient {
     );
 
     final dio = Dio(options);
-    dio.interceptors.add(InterceptorsWrapper(
-      onError: (DioException error, ErrorInterceptorHandler handler) async {
-        final requestOptions = error.requestOptions;
-        final retryCount = requestOptions.extra['retry'] as int? ?? 0;
-
-        if (retryCount < AppConfig.retryAttempts && _shouldRetry(error)) {
-          requestOptions.extra['retry'] = retryCount + 1;
-          await Future<void>.delayed(const Duration(milliseconds: AppConfig.retryDelayMillis));
-
-          try {
-            final response = await dio.fetch(requestOptions);
-            return handler.resolve(response);
-          } catch (retryError) {
-            if (retryError is DioException) {
-              return handler.next(retryError);
-            }
-            return handler.next(DioException(requestOptions: requestOptions, error: retryError));
-          }
-        }
-
-        return handler.next(error);
-      },
-    ));
-
-    dio.interceptors.add(LogInterceptor(
-      requestHeader: false,
-      requestBody: false,
-      responseHeader: false,
-      responseBody: false,
-      error: true,
-    ));
-
+    dio.interceptors.addAll(AppInterceptors.build());
     return dio;
   }
 
-  static bool _shouldRetry(DioException exception) {
+  static bool shouldRetry(DioException exception) {
     return exception.type == DioExceptionType.connectionTimeout ||
         exception.type == DioExceptionType.receiveTimeout ||
         exception.type == DioExceptionType.sendTimeout ||

@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:fover/core/constants/api_constants.dart';
 import 'package:fover/core/network/api_result.dart';
 import 'package:fover/core/network/dio_client.dart';
+import 'package:fover/core/network/dio_error_mapper.dart';
 import 'package:fover/features/teams/domain/models/team_model.dart';
 
 class TeamApiService {
@@ -18,7 +19,7 @@ class TeamApiService {
       }
       return ApiResult.failure('Invalid team payload received from server.');
     } on DioException catch (exception, stackTrace) {
-      return ApiResult.failure(exception.message ?? 'Unable to load team data', stackTrace);
+      return ApiResult.failure(DioErrorMapper.map(exception), stackTrace);
     } catch (error, stackTrace) {
       return ApiResult.failure(error.toString(), stackTrace);
     }

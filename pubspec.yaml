@@ -34,6 +34,9 @@ dependencies:
   # Image cache
   cached_network_image: ^3.4.1
 
+  # Country flags (lightweight SVG/png flags without flutter_svg)
+  country_flags: any
+
   # Firebase
   firebase_core: ^4.1.1
   firebase_messaging: ^16.0.1

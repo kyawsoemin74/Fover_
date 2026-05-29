@@ -36,10 +36,10 @@ class NewsState {
 }
 
 final newsRepositoryProvider = Provider<NewsRepository>((ref) {
-  return NewsRepositoryImpl(dioClient: DioClient());
+  return NewsRepositoryImpl(dioClient: DioClient(dio: ref.watch(dioProvider)));
 });
 
-final newsProvider = StateNotifierProvider.autoDispose<NewsNotifier, NewsState>((ref) {
+final newsProvider = StateNotifierProvider<NewsNotifier, NewsState>((ref) {
   final repository = ref.watch(newsRepositoryProvider);
   return NewsNotifier(repository);
 });

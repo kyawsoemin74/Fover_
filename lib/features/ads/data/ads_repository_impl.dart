@@ -8,8 +8,8 @@ import 'package:fover/features/ads/domain/ads_repository.dart';
 import 'package:fover/features/ads/domain/models/ad_model.dart';
 
 class AdsRepositoryImpl implements AdsRepository {
-  AdsRepositoryImpl({DioClient? dioClient})
-      : _apiService = AdsApiService(dioClient ?? DioClient());
+    AdsRepositoryImpl({DioClient? dioClient})
+      : _apiService = AdsApiService(dioClient ?? DioClient.shared);
 
   final AdsApiService _apiService;
   static const _cacheBoxName = 'ads_cache';

@@ -8,8 +8,8 @@ import 'package:fover/features/news/domain/models/news_model.dart';
 import 'package:fover/features/news/domain/news_repository.dart';
 
 class NewsRepositoryImpl implements NewsRepository {
-  NewsRepositoryImpl({DioClient? dioClient})
-      : _apiService = NewsApiService(dioClient ?? DioClient());
+    NewsRepositoryImpl({DioClient? dioClient})
+      : _apiService = NewsApiService(dioClient ?? DioClient.shared);
 
   final NewsApiService _apiService;
   static const _cacheBoxName = 'news_cache';

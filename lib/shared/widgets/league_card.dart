@@ -1,5 +1,5 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:fover/core/utils/country_flag_helper.dart';
 
 class LeagueCard extends StatelessWidget {
   const LeagueCard({
@@ -21,13 +21,26 @@ class LeagueCard extends StatelessWidget {
   final List<Widget> matches;
   final String? countryFlagUrl;
 
+
+  String get _leagueLabel {
+    if (countryCode.isNotEmpty) {
+      return '$countryCode - $leagueName';
+    }
+    return leagueName;
+  }
+
+  String get _matchLabel {
+    return matchCount == 1 ? '1 match' : '$matchCount matches';
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
     return Card(
-      margin: const EdgeInsets.symmetric(vertical: 10),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      elevation: 0,
       child: AnimatedSize(
         duration: const Duration(milliseconds: 280),
         curve: Curves.easeOutCubic,
@@ -36,75 +49,75 @@ class LeagueCard extends StatelessWidget {
             Material(
               color: Colors.transparent,
               child: InkWell(
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(18),
                 onTap: onToggle,
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                   child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      CircleAvatar(
-                        radius: 22,
-                        backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.22),
-                        child: countryFlagUrl != null && countryFlagUrl!.isNotEmpty
-                            ? CachedNetworkImage(
-                                imageUrl: countryFlagUrl!,
-                                fit: BoxFit.cover,
-                                width: 30,
-                                height: 30,
-                                errorWidget: (context, url, error) => Text(
-                                  countryCode,
-                                  style: theme.textTheme.labelLarge?.copyWith(
-                                        color: theme.colorScheme.primary,
-                                        fontWeight: FontWeight.w800,
-                                      ),
-                                ),
-                              )
-                            : Text(
-                                countryCode,
-                                style: theme.textTheme.labelLarge?.copyWith(
-                                      color: theme.colorScheme.primary,
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                              ),
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.primary.withValues(alpha: 0.14),
+                          shape: BoxShape.circle,
+                        ),
+                        child: ClipOval(
+                          child: Center(
+                            child: CountryFlagHelper.buildCountryFlag(countryFlagUrl, size: 24),
+                          ),
+                        ),
                       ),
-                      const SizedBox(width: 14),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              leagueName,
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.w800,
-                                  ),
+                              _leagueLabel,
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w800,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            const SizedBox(height: 4),
+                            const SizedBox(height: 2),
                             Text(
-                              '$matchCount matches',
+                              _matchLabel,
                               style: theme.textTheme.bodySmall?.copyWith(
-                                    color: theme.colorScheme.onSurfaceVariant,
-                                  ),
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ],
                         ),
                       ),
+                      const SizedBox(width: 12),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        width: 30,
+                        height: 30,
+                        alignment: Alignment.center,
                         decoration: BoxDecoration(
-                          color: theme.colorScheme.onSurface.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(16),
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(14),
                         ),
                         child: Text(
-                          matchCount.toString(),
+                          '$matchCount',
                           style: theme.textTheme.labelLarge?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
+                            fontWeight: FontWeight.w700,
+                            color: theme.colorScheme.onSurface,
+                          ),
+                          textAlign: TextAlign.center,
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 10),
                       Icon(
                         expanded ? Icons.expand_less : Icons.expand_more,
-                        color: theme.colorScheme.onSurface,
+                        color: theme.colorScheme.onSurfaceVariant,
+                        size: 22,
                       ),
                     ],
                   ),
@@ -113,7 +126,7 @@ class LeagueCard extends StatelessWidget {
             ),
             if (expanded)
               Padding(
-                padding: const EdgeInsets.only(bottom: 16, left: 16, right: 16),
+                padding: const EdgeInsets.only(bottom: 16, left: 14, right: 14),
                 child: Column(children: matches),
               ),
           ],

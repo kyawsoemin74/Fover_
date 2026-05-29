@@ -10,8 +10,8 @@ import 'package:fover/features/matches/domain/models/match_odds_model.dart';
 import 'package:fover/features/matches/domain/models/match_stats_model.dart';
 
 class MatchDetailRepositoryImpl implements MatchDetailRepository {
-  MatchDetailRepositoryImpl({DioClient? dioClient})
-      : _apiService = MatchApiService(dioClient ?? DioClient());
+    MatchDetailRepositoryImpl({DioClient? dioClient})
+      : _apiService = MatchApiService(dioClient ?? DioClient.shared);
 
   final MatchApiService _apiService;
 

@@ -3,13 +3,14 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fover/core/network/api_result.dart';
+import 'package:fover/core/network/dio_client.dart';
 import 'package:fover/features/home/data/home_repository_impl.dart';
 import 'package:fover/features/home/domain/home_repository.dart';
 import 'package:fover/features/home/domain/models/league_model.dart';
 import 'package:fover/features/home/providers/home_state.dart';
 
 final homeRepositoryProvider = Provider<HomeRepository>((ref) {
-  return HomeRepositoryImpl();
+  return HomeRepositoryImpl(dioClient: DioClient(dio: ref.watch(dioProvider)));
 });
 
 final homeProvider = StateNotifierProvider<HomeNotifier, HomeState>((ref) {
@@ -25,19 +26,15 @@ class HomeNotifier extends StateNotifier<HomeState> {
 
   final HomeRepository _repository;
   Timer? _liveRefreshTimer;
+  bool _isRefreshing = false;
 
   Future<void> loadMatches() async {
-    state = state.copyWith(status: HomeStatus.loading, errorMessage: null);
     await _loadMatchesForDate(state.selectedDate);
   }
 
   Future<void> refresh() async {
-    state = state.copyWith(isRefreshing: true, errorMessage: null);
-    final result = await _repository.fetchLeagueMatches(
-      state.selectedDate,
-      forceRefresh: true,
-    );
-    _handleResult(result, refreshing: true);
+    debugPrint('Requesting manual refresh');
+    await _loadMatchesForDate(state.selectedDate, forceRefresh: true);
   }
 
   void toggleFollowing() {
@@ -65,9 +62,29 @@ class HomeNotifier extends StateNotifier<HomeState> {
     await _loadMatchesForDate(state.selectedDate);
   }
 
-  Future<void> _loadMatchesForDate(DateTime date) async {
-    final result = await _repository.fetchLeagueMatches(date);
-    _handleResult(result);
+  Future<void> _loadMatchesForDate(DateTime date, {bool forceRefresh = false, bool periodic = false}) async {
+    if (_isRefreshing) {
+      debugPrint('Refresh skipped: already running');
+      return;
+    }
+
+    _isRefreshing = true;
+    debugPrint('Home refresh started');
+    try {
+      if (!periodic) {
+        state = state.copyWith(status: HomeStatus.loading, errorMessage: null);
+      }
+
+      final result = await _repository.fetchLeagueMatches(date, forceRefresh: forceRefresh);
+      if (periodic) {
+        _handlePeriodicResult(result);
+      } else {
+        _handleResult(result);
+      }
+    } finally {
+      _isRefreshing = false;
+      debugPrint('Home refresh completed');
+    }
   }
 
   void _initializeLiveRefresh() {
@@ -79,11 +96,12 @@ class HomeNotifier extends StateNotifier<HomeState> {
   }
 
   Future<void> _refreshLiveMatches() async {
-    final result = await _repository.fetchLeagueMatches(
-      state.selectedDate,
-      forceRefresh: true,
-    );
-    _handlePeriodicResult(result);
+    if (_isRefreshing) {
+      debugPrint('Live refresh skipped: already running');
+      return;
+    }
+
+    await _loadMatchesForDate(state.selectedDate, forceRefresh: true, periodic: true);
   }
 
   void _handlePeriodicResult(ApiResult<List<LeagueInfo>> result) {
@@ -133,10 +151,7 @@ class HomeNotifier extends StateNotifier<HomeState> {
     return false;
   }
 
-  void _handleResult(
-    final ApiResult<List<LeagueInfo>> result, {
-    bool refreshing = false,
-  }) {
+  void _handleResult(final ApiResult<List<LeagueInfo>> result) {
     if (result.isSuccess) {
       final leagues = result.data ?? const [];
       final nextStatus = leagues.isEmpty ? HomeStatus.empty : HomeStatus.loaded;

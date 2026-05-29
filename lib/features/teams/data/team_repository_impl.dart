@@ -7,8 +7,8 @@ import 'package:fover/features/teams/domain/team_repository.dart';
 import 'package:fover/features/teams/domain/models/team_model.dart';
 
 class TeamRepositoryImpl implements TeamRepository {
-  TeamRepositoryImpl({DioClient? dioClient})
-      : _apiService = TeamApiService(dioClient ?? DioClient());
+    TeamRepositoryImpl({DioClient? dioClient})
+      : _apiService = TeamApiService(dioClient ?? DioClient.shared);
 
   final TeamApiService _apiService;
   static const _cacheBoxName = 'team_cache';

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:fover/features/favorites/providers/favorites_provider.dart';
 import 'package:fover/features/home/providers/home_provider.dart';
 import 'package:fover/features/home/providers/home_state.dart';
 import 'package:fover/features/home/presentation/widgets/home_section_header.dart';
@@ -19,6 +20,9 @@ class HomePage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final homeState = ref.watch(homeProvider);
     final homeNotifier = ref.read(homeProvider.notifier);
+    final favoritesState = ref.watch(favoritesProvider);
+    final followingCount = ref.watch(followingCountProvider);
+    final followingItems = favoritesState.items;
 
     return RefreshIndicator(
       onRefresh: homeNotifier.refresh,
@@ -40,44 +44,30 @@ class HomePage extends ConsumerWidget {
               ),
             ),
           ),
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
-            sliver: SliverToBoxAdapter(
-              child: HomeSectionHeader(
-                title: 'Following',
-                actionLabel: homeState.showFollowing ? 'Hide' : 'Show',
-                onAction: homeNotifier.toggleFollowing,
-              ),
-            ),
-          ),
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            sliver: SliverToBoxAdapter(
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 260),
-                switchInCurve: Curves.easeOutCubic,
-                switchOutCurve: Curves.easeInCubic,
-                child: EmptyState(
-                  key: ValueKey(homeState.showFollowing),
-                  title: homeState.showFollowing
-                      ? 'No followed matches yet'
-                      : 'Following section hidden',
-                  message: homeState.showFollowing
-                      ? 'Add teams and leagues to keep your personalised live score feed in view.'
-                      : 'Restore the following section to resume updates from teams and competitions you care about.',
-                  actionLabel: homeState.showFollowing ? 'Hide section' : 'Show section',
+          if (followingCount > 0) ...[
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              sliver: SliverToBoxAdapter(
+                child: HomeSectionHeader(
+                  title: 'Following ($followingCount)',
+                  actionLabel: homeState.showFollowing ? 'Hide' : 'Show',
                   onAction: homeNotifier.toggleFollowing,
                 ),
               ),
             ),
-          ),
+            if (homeState.showFollowing)
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                sliver: SliverToBoxAdapter(
+                  child: _FollowingPreview(items: followingItems),
+                ),
+              ),
+          ],
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
             sliver: SliverToBoxAdapter(
-              child: HomeSectionHeader(
-                title: 'Competitions',
-                actionLabel: 'Sort',
-                onAction: () {},
+              child: const HomeSectionHeader(
+                title: '',
               ),
             ),
           ),
@@ -165,6 +155,46 @@ class HomePage extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _FollowingPreview extends StatelessWidget {
+  const _FollowingPreview({required this.items});
+
+  final List<FavoriteItem> items;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    if (items.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Wrap(
+      spacing: 10,
+      runSpacing: 10,
+      children: items
+          .map(
+            (item) => Container(
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: theme.colorScheme.onSurface.withAlpha(20),
+                ),
+              ),
+              child: Text(
+                item.title,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          )
+          .toList(),
     );
   }
 }

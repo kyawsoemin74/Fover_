@@ -5,7 +5,7 @@ import 'package:fover/features/matches/domain/match_detail_repository.dart';
 import 'package:fover/features/matches/providers/match_detail_state.dart';
 
 final matchDetailRepositoryProvider = Provider<MatchDetailRepository>((ref) {
-  return MatchDetailRepositoryImpl(dioClient: DioClient());
+  return MatchDetailRepositoryImpl(dioClient: DioClient(dio: ref.watch(dioProvider)));
 });
 
 final matchDetailProvider = StateNotifierProvider.autoDispose.family<MatchDetailNotifier, MatchDetailState, int>((ref, matchId) {

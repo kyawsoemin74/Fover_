@@ -35,7 +35,7 @@ class TeamState {
 }
 
 final teamRepositoryProvider = Provider<TeamRepository>((ref) {
-  return TeamRepositoryImpl(dioClient: DioClient());
+  return TeamRepositoryImpl(dioClient: DioClient(dio: ref.watch(dioProvider)));
 });
 
 final teamProvider = StateNotifierProvider.autoDispose<TeamNotifier, TeamState>((ref) {

@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:fover/core/constants/api_constants.dart';
 import 'package:fover/core/network/api_result.dart';
 import 'package:fover/core/network/dio_client.dart';
+import 'package:fover/core/network/dio_error_mapper.dart';
 import 'package:fover/features/ads/domain/models/ad_model.dart';
 
 class AdsApiService {
@@ -25,7 +26,7 @@ class AdsApiService {
 
       return ApiResult.failure('Unexpected ads response format.');
     } on DioException catch (exception, stackTrace) {
-      return ApiResult.failure(exception.message ?? 'Unable to load ads.', stackTrace);
+      return ApiResult.failure(DioErrorMapper.map(exception), stackTrace);
     } catch (error, stackTrace) {
       return ApiResult.failure(error.toString(), stackTrace);
     }
