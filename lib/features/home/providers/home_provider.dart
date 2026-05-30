@@ -19,7 +19,7 @@ final homeProvider = StateNotifierProvider<HomeNotifier, HomeState>((ref) {
 });
 
 class HomeNotifier extends StateNotifier<HomeState> {
-  HomeNotifier(this._repository) : super(HomeState()) {
+  HomeNotifier(this._repository) : super(HomeState(status: HomeStatus.loading)) {
     loadMatches();
     _initializeLiveRefresh();
   }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:fover/features/matches/domain/models/match_detail_model.dart';
 import 'package:fover/features/matches/providers/match_detail_provider.dart';
 import 'package:fover/features/matches/providers/match_detail_state.dart';
@@ -218,10 +219,17 @@ class _MatchDetailPageState extends ConsumerState<MatchDetailPage> {
   Widget build(BuildContext context) {
     if (widget.matchId <= 0) {
       return Scaffold(
-        backgroundColor: Colors.black,
-        appBar: AppBar(title: const Text('Match Center')),
-        body: const Center(child: Text('Invalid match selected.')),
-      );
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.chevron_left_rounded, size: 24),
+          onPressed: () => context.pop(),
+          tooltip: 'Back',
+        ),
+        title: const Text('Match Detail'),
+      ),
+      body: const Center(child: Text('Invalid match selected.')),
+    );
     }
 
     final summaryState = ref.watch(matchDetailProvider(widget.matchId));
@@ -229,15 +237,20 @@ class _MatchDetailPageState extends ConsumerState<MatchDetailPage> {
     return Scaffold(
       backgroundColor: const Color(0xFF090B13),
       appBar: AppBar(
-        title: const Text('Match Center'),
+        leading: IconButton(
+          icon: const Icon(Icons.chevron_left_rounded, size: 24),
+          onPressed: () => context.pop(),
+          tooltip: 'Back',
+        ),
+        title: const Text('Match Detail'),
         backgroundColor: const Color(0xFF090B13),
         elevation: 0,
-        centerTitle: true,
+        centerTitle: false,
         titleTextStyle: Theme.of(context).textTheme.titleLarge?.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.6,
-            ),
+          color: Colors.white,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.6,
+        ),
       ),
       body: _buildBody(summaryState),
     );

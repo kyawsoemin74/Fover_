@@ -4,7 +4,7 @@ enum HomeStatus { initial, loading, loaded, refreshing, empty, error }
 
 class HomeState {
   HomeState({
-    this.status = HomeStatus.initial,
+    this.status = HomeStatus.loading,
     DateTime? selectedDate,
     this.expandedLeagueIds = const {'premier-league'},
     this.showFollowing = true,

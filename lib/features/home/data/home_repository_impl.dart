@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
 import 'package:fover/core/constants/app_constants.dart';
@@ -22,11 +24,9 @@ class HomeRepositoryImpl implements HomeRepository {
     bool forceRefresh = false,
   }) async {
     final cacheKey = _cacheKey(date);
-    final box = await _openCacheBox();
 
     if (!forceRefresh) {
-      final cached = box.get(cacheKey);
-      final cachedData = _readCachedLeagues(cached);
+      final cachedData = _readCachedLeaguesIfAvailable(cacheKey);
       if (cachedData != null) {
         return ApiResult.success(cachedData);
       }
@@ -35,30 +35,23 @@ class HomeRepositoryImpl implements HomeRepository {
     final result = await _apiService.fetchMatchesByDate(date);
     if (!result.isSuccess) {
       if (!forceRefresh) {
-        final cached = box.get(cacheKey);
-        final cachedData = _readCachedLeagues(cached);
-        if (cachedData != null) {
-          return ApiResult.success(cachedData);
+        final fallback = await _readCachedLeaguesFromDisk(cacheKey);
+        if (fallback != null) {
+          return ApiResult.success(fallback);
         }
       }
       return ApiResult.failure(result.error ?? 'Unknown error');
     }
 
     final leagues = result.data!.map((league) => league.toDomain()).toList();
-    await box.put(cacheKey, {
-      'cachedAt': DateTime.now().toIso8601String(),
-      'payload': leagues.map((league) => league.toJson()).toList(),
-    });
+    unawaited(_saveCache(cacheKey, leagues));
 
     return ApiResult.success(leagues);
   }
 
   Future<ApiResult<List<LeagueInfo>>> fetchLiveMatches({bool forceRefresh = false}) async {
-    final box = await _openCacheBox();
-
     if (!forceRefresh) {
-      final cached = box.get(_liveCacheKey);
-      final cachedData = _readCachedLeagues(cached);
+      final cachedData = _readCachedLeaguesIfAvailable(_liveCacheKey);
       if (cachedData != null) {
         return ApiResult.success(cachedData);
       }
@@ -67,28 +60,48 @@ class HomeRepositoryImpl implements HomeRepository {
     final result = await _apiService.fetchLiveMatches();
     if (!result.isSuccess) {
       if (!forceRefresh) {
-        final cached = box.get(_liveCacheKey);
-        final cachedData = _readCachedLeagues(cached);
-        if (cachedData != null) {
-          return ApiResult.success(cachedData);
+        final fallback = await _readCachedLeaguesFromDisk(_liveCacheKey);
+        if (fallback != null) {
+          return ApiResult.success(fallback);
         }
       }
       return ApiResult.failure(result.error ?? 'Unknown error');
     }
 
     final leagues = result.data!.map((league) => league.toDomain()).toList();
-    await box.put(_liveCacheKey, {
+    unawaited(_saveCache(_liveCacheKey, leagues));
+    return ApiResult.success(leagues);
+  }
+
+  Future<List<LeagueInfo>?> _readCachedLeaguesFromDisk(String cacheKey) async {
+    final box = await _openCacheBox();
+    final cached = box.get(cacheKey);
+    return _readCachedLeagues(cached);
+  }
+
+  List<LeagueInfo>? _readCachedLeaguesIfAvailable(String cacheKey) {
+    if (!HiveService.instance.boxExists(_cacheBoxName)) {
+      return null;
+    }
+
+    final box = HiveService.instance.openBox<dynamic>(_cacheBoxName);
+    final cached = box.get(cacheKey);
+    return _readCachedLeagues(cached);
+  }
+
+  Future<void> _saveCache(String cacheKey, List<LeagueInfo> leagues) async {
+    final box = await _openCacheBox();
+    await box.put(cacheKey, {
       'cachedAt': DateTime.now().toIso8601String(),
       'payload': leagues.map((league) => league.toJson()).toList(),
     });
-    return ApiResult.success(leagues);
   }
 
   Future<Box<dynamic>> _openCacheBox() async {
     if (HiveService.instance.boxExists(_cacheBoxName)) {
       return HiveService.instance.openBox<dynamic>(_cacheBoxName);
     }
-    return await HiveService.instance.openBoxAsync<dynamic>(_cacheBoxName);
+    return HiveService.instance.openBoxAsync<dynamic>(_cacheBoxName);
   }
 
   String _cacheKey(DateTime date) {

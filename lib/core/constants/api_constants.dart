@@ -11,6 +11,7 @@ class ApiConstants {
   static String teamById(int teamId) => '/api/teams/$teamId';
 
   static const news = '/api/news';
+  static String newsById(String id) => '/api/news/$id';
   static const ads = '/api/ads/';
 
   static const login = '/api/auth/login';

@@ -8,20 +8,25 @@ class MatchDetailHeader extends StatelessWidget {
   final MatchDetailInfo detail;
 
   bool get _isLive => detail.status.toLowerCase().contains('live');
+  bool get _isUpcoming => detail.status.toUpperCase() == 'NS';
+  bool get _shouldShowBadge =>
+      _isLive ||
+      ['HT', 'FT', 'ET', 'PEN'].contains(detail.status.toUpperCase());
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
         color: const Color(0xFF111827),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(22),
         border: Border.all(color: Colors.white12),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 child: Column(
@@ -30,25 +35,36 @@ class MatchDetailHeader extends StatelessWidget {
                     Text(
                       detail.leagueName,
                       style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                            color: Colors.white70,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.6,
-                          ),
+                        color: Colors.white70,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.4,
+                      ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 2),
                     Text(
                       detail.countryName,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.white54,
-                          ),
+                        color: Colors.white54,
+                        fontSize: 12,
+                      ),
                     ),
                   ],
                 ),
               ),
-              _StatusChip(isLive: _isLive, status: detail.status),
+              if (_shouldShowBadge)
+                _StatusChip(isLive: _isLive, status: detail.status),
+              if (!_shouldShowBadge && _isUpcoming)
+                Text(
+                  detail.matchTime,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Colors.white60,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
             ],
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 10),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -61,7 +77,7 @@ class MatchDetailHeader extends StatelessWidget {
               _ScoreDisplay(
                 homeScore: detail.homeScore,
                 awayScore: detail.awayScore,
-                isLive: _isLive,
+                isUpcoming: _isUpcoming,
                 matchTime: detail.matchTime,
               ),
               _TeamPanel(
@@ -70,13 +86,6 @@ class MatchDetailHeader extends StatelessWidget {
                 alignment: Alignment.centerLeft,
               ),
             ],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            detail.matchTime,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.white54,
-                ),
           ),
         ],
       ),
@@ -90,20 +99,30 @@ class _StatusChip extends StatelessWidget {
   final bool isLive;
   final String status;
 
+  String get _displayStatus {
+    final upper = status.toUpperCase();
+    if (upper == 'NS') return '';
+    if (isLive) return 'LIVE';
+    return upper;
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (_displayStatus.isEmpty) return const SizedBox.shrink();
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
       decoration: BoxDecoration(
-        color: isLive ? const Color(0xFFEF4444) : const Color(0xFF1F2937),
-        borderRadius: BorderRadius.circular(14),
+        color: isLive ? const Color(0xFFEF4444) : const Color(0xFF374151),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
-        isLive ? 'LIVE' : status.toUpperCase(),
+        _displayStatus,
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.w700,
-            ),
+          color: Colors.white,
+          fontWeight: FontWeight.w700,
+          fontSize: 11,
+        ),
       ),
     );
   }
@@ -122,42 +141,46 @@ class _TeamPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textAlign = alignment == Alignment.centerRight ? TextAlign.right : TextAlign.left;
+    final textAlign = alignment == Alignment.centerRight
+        ? TextAlign.right
+        : TextAlign.left;
     return Column(
       crossAxisAlignment: alignment == Alignment.centerRight
           ? CrossAxisAlignment.end
           : CrossAxisAlignment.start,
       children: [
-        Container(
-          width: 72,
-          height: 72,
-          decoration: const BoxDecoration(
-            color: Color(0xFF13223F),
-            shape: BoxShape.circle,
-          ),
-          child: ClipOval(
+        ClipOval(
+          child: Container(
+            width: 76,
+            height: 76,
+            color: const Color(0xFF0F172A),
             child: logoUrl.isNotEmpty
                 ? CachedNetworkImage(
                     imageUrl: logoUrl,
                     fit: BoxFit.cover,
-                    errorWidget: (context, url, error) => _TeamInitial(name: name),
+                    errorWidget: (context, url, error) =>
+                        _TeamInitial(name: name),
                     placeholder: (context, url) => const Center(
-                      child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white24),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white24,
+                      ),
                     ),
                   )
                 : _TeamInitial(name: name),
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 8),
         SizedBox(
-          width: 92,
+          width: 94,
           child: Text(
             name,
             textAlign: textAlign,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                ),
+              color: Colors.white,
+              fontWeight: FontWeight.w800,
+              fontSize: 14,
+            ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
@@ -171,42 +194,35 @@ class _ScoreDisplay extends StatelessWidget {
   const _ScoreDisplay({
     required this.homeScore,
     required this.awayScore,
-    required this.isLive,
+    required this.isUpcoming,
     required this.matchTime,
   });
 
   final int homeScore;
   final int awayScore;
-  final bool isLive;
+  final bool isUpcoming;
   final String matchTime;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          decoration: BoxDecoration(
-            color: const Color(0xFF161F32),
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: Colors.white12),
-          ),
-          child: Text(
-            '$homeScore - $awayScore',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w900,
-                ),
-          ),
+    if (isUpcoming) {
+      return Text(
+        matchTime,
+        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+          color: Colors.white,
+          fontWeight: FontWeight.w700,
+          fontSize: 18,
         ),
-        const SizedBox(height: 10),
-        Text(
-          isLive ? 'Match in progress' : 'Kickoff at $matchTime',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.white70,
-              ),
-        ),
-      ],
+      );
+    }
+
+    return Text(
+      '$homeScore - $awayScore',
+      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+        color: Colors.white,
+        fontWeight: FontWeight.w900,
+        letterSpacing: 0.5,
+      ),
     );
   }
 }
@@ -219,7 +235,13 @@ class _TeamInitial extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final initials = name.isNotEmpty
-        ? name.trim().split(' ').map((part) => part[0]).take(2).join().toUpperCase()
+        ? name
+              .trim()
+              .split(' ')
+              .map((part) => part[0])
+              .take(2)
+              .join()
+              .toUpperCase()
         : '?';
     return Container(
       color: const Color(0xFF111827),
@@ -227,11 +249,10 @@ class _TeamInitial extends StatelessWidget {
       child: Text(
         initials,
         style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              color: Colors.white70,
-              fontWeight: FontWeight.w900,
-            ),
+          color: Colors.white70,
+          fontWeight: FontWeight.w900,
+        ),
       ),
     );
   }
 }
-

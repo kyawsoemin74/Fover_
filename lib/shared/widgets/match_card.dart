@@ -46,12 +46,12 @@ class MatchCard extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 6),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               SizedBox(
-                width: 58,
+                width: 56,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
@@ -63,22 +63,26 @@ class MatchCard extends StatelessWidget {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    if (!isNS) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        statusLabel,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                          fontWeight: FontWeight.w700,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                    const SizedBox(height: 2),
+                    Text(
+                      isNS ? '' : statusLabel,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w700,
                       ),
-                    ],
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
+              Container(
+                width: 1,
+                height: 40,
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.12),
+              ),
+              const SizedBox(width: 6),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -96,28 +100,49 @@ class MatchCard extends StatelessWidget {
                   ],
                 ),
               ),
-              if (showScore) ...[
-                const SizedBox(width: 10),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
+              const SizedBox(width: 6),
+              SizedBox(
+                width: 40,
+                child: Column(
                   mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Text(
-                      scoreParts[0],
+                      showScore ? scoreParts[0] : '',
                       style: theme.textTheme.bodySmall?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
+                      textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      scoreParts[1],
+                      showScore ? scoreParts[1] : '',
                       style: theme.textTheme.bodySmall?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
+                      textAlign: TextAlign.center,
                     ),
                   ],
                 ),
-              ],
+              ),
+              const SizedBox(width: 6),
+              Container(
+                width: 1,
+                height: 40,
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.12),
+              ),
+              const SizedBox(width: 6),
+              SizedBox(
+                width: 38,
+                height: 40,
+                child: Center(
+                  child: Icon(
+                    Icons.notifications_none,
+                    size: 18,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
             ],
           ),
         ),
@@ -158,8 +183,8 @@ class _TeamLine extends StatelessWidget {
       children: [
         if (logoUrl != null && logoUrl!.isNotEmpty) ...[
           Container(
-            width: 20,
-            height: 20,
+            width: 22,
+            height: 22,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: theme.colorScheme.surfaceContainerHighest,
@@ -168,8 +193,8 @@ class _TeamLine extends StatelessWidget {
             child: CachedNetworkImage(
               imageUrl: logoUrl!,
               fit: BoxFit.cover,
-              width: 20,
-              height: 20,
+              width: 22,
+              height: 22,
               errorWidget: (context, url, error) => Center(
                 child: Text(
                   teamName.split(' ').map((part) => part.characters.first).take(2).join(),

@@ -2,12 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/router/app_router.dart';
-import 'core/storage/hive_service.dart';
 import 'core/theme/dark_theme.dart';
 
-void main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  await HiveService.instance.initialize();
 
   runApp(
     const ProviderScope(child: FoverApp()),

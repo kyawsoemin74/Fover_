@@ -9,7 +9,7 @@ import 'package:fover/features/home/presentation/widgets/home_top_section.dart';
 import 'package:fover/shared/widgets/empty_state.dart';
 import 'package:fover/shared/widgets/home_loading_skeleton.dart';
 import 'package:fover/shared/widgets/league_card.dart';
-import 'package:fover/shared/widgets/match_card.dart';
+// match widgets are now built lazily inside LeagueCard
 
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
@@ -117,33 +117,15 @@ class HomePage extends ConsumerWidget {
                       matchCount: league.matches.length,
                       expanded: expanded,
                       onToggle: () => homeNotifier.toggleLeagueExpanded(league.id),
-                      matches: league.matches
-                          .map(
-                            (match) => MatchCard(
-                              teamA: match.teamA,
-                              teamB: match.teamB,
-                              score: match.score,
-                              kickOffTime: match.kickOffTime,
-                              status: match.status,
-                              redCardsA: match.redCardsA,
-                              redCardsB: match.redCardsB,
-                              yellowCardsA: match.yellowCardsA,
-                              yellowCardsB: match.yellowCardsB,
-                              teamALogoUrl: match.teamALogoUrl,
-                              teamBLogoUrl: match.teamBLogoUrl,
-                              onTap: match.matchId > 0
-                                  ? () => context.goNamed(
-                                        'matchDetail',
-                                        pathParameters: {'matchId': match.matchId.toString()},
-                                        queryParameters: {
-                                          'homeTeamId': match.homeTeamId.toString(),
-                                          'awayTeamId': match.awayTeamId.toString(),
-                                        },
-                                      )
-                                  : null,
-                            ),
-                          )
-                          .toList(),
+                      matches: league.matches,
+                      onMatchTap: (match) => context.pushNamed(
+                        'matchDetail',
+                        pathParameters: {'matchId': match.matchId.toString()},
+                        queryParameters: {
+                          'homeTeamId': match.homeTeamId.toString(),
+                          'awayTeamId': match.awayTeamId.toString(),
+                        },
+                      ),
                     );
                   },
                   childCount: homeState.leagues.length,

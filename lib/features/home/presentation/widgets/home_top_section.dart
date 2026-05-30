@@ -59,7 +59,7 @@ class HomeTopSection extends ConsumerWidget {
                   child: Text(
                     'Fover',
                     style: theme.textTheme.titleLarge?.copyWith(
-                      fontSize: 16,
+                      fontSize: 18,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 0.08,
                     ),
@@ -68,11 +68,7 @@ class HomeTopSection extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(width: 6),
-                _IconAction(
-                  icon: Icons.notifications_none,
-                  onTap: onNotifications,
-                  tooltip: 'Notifications',
-                ),
+                
                 const SizedBox(width: 4),
                 _IconAction(
                   icon: Icons.calendar_today_outlined,

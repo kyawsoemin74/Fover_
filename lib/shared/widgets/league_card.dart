@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fover/core/utils/country_flag_helper.dart';
+import 'package:fover/features/home/domain/models/match_model.dart';
+import 'package:fover/shared/widgets/match_card.dart';
 
 class LeagueCard extends StatelessWidget {
   const LeagueCard({
@@ -10,6 +12,7 @@ class LeagueCard extends StatelessWidget {
     required this.expanded,
     required this.onToggle,
     required this.matches,
+    this.onMatchTap,
     this.countryFlagUrl,
   });
 
@@ -18,7 +21,8 @@ class LeagueCard extends StatelessWidget {
   final int matchCount;
   final bool expanded;
   final VoidCallback onToggle;
-  final List<Widget> matches;
+  final List<MatchInfo> matches;
+  final ValueChanged<MatchInfo>? onMatchTap;
   final String? countryFlagUrl;
 
 
@@ -108,7 +112,28 @@ class LeagueCard extends StatelessWidget {
             if (expanded)
               Padding(
                 padding: const EdgeInsets.only(bottom: 8, left: 12, right: 12),
-                child: Column(children: matches),
+                child: Column(
+                  children: matches.map((match) {
+                    return MatchCard(
+                      teamA: match.teamA,
+                      teamB: match.teamB,
+                      score: match.score,
+                      kickOffTime: match.kickOffTime,
+                      status: match.status,
+                      redCardsA: match.redCardsA,
+                      redCardsB: match.redCardsB,
+                      yellowCardsA: match.yellowCardsA,
+                      yellowCardsB: match.yellowCardsB,
+                      teamALogoUrl: match.teamALogoUrl,
+                      teamBLogoUrl: match.teamBLogoUrl,
+                      onTap: match.matchId > 0
+                          ? () {
+                              onMatchTap?.call(match);
+                            }
+                          : null,
+                    );
+                  }).toList(),
+                ),
               ),
           ],
         ),
