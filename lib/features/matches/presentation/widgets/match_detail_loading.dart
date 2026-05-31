@@ -31,7 +31,7 @@ class _SkeletonCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: height,
+      constraints: BoxConstraints(minHeight: height),
       decoration: BoxDecoration(
         color: const Color(0xFF0A111F),
         borderRadius: BorderRadius.circular(22),
@@ -39,6 +39,7 @@ class _SkeletonCard extends StatelessWidget {
       ),
       padding: const EdgeInsets.all(20),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Container(
@@ -50,12 +51,11 @@ class _SkeletonCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white12,
-                borderRadius: BorderRadius.circular(18),
-              ),
+          Container(
+            height: 110,
+            decoration: BoxDecoration(
+              color: Colors.white12,
+              borderRadius: BorderRadius.circular(18),
             ),
           ),
           const SizedBox(height: 16),

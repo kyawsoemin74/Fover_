@@ -7,122 +7,37 @@ class MatchDetailHeader extends StatelessWidget {
 
   final MatchDetailInfo detail;
 
-  bool get _isLive => detail.status.toLowerCase().contains('live');
   bool get _isUpcoming => detail.status.toUpperCase() == 'NS';
-  bool get _shouldShowBadge =>
-      _isLive ||
-      ['HT', 'FT', 'ET', 'PEN'].contains(detail.status.toUpperCase());
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: const Color(0xFF111827),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: Colors.white12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      detail.leagueName,
-                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                        color: Colors.white70,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.4,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      detail.countryName,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.white54,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (_shouldShowBadge)
-                _StatusChip(isLive: _isLive, status: detail.status),
-              if (!_shouldShowBadge && _isUpcoming)
-                Text(
-                  detail.matchTime,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.white60,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-            ],
+          Expanded(
+            child: _TeamPanel(
+              name: detail.homeTeam,
+              logoUrl: detail.homeTeamLogo,
+            ),
           ),
-          const SizedBox(height: 10),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              _TeamPanel(
-                name: detail.homeTeam,
-                logoUrl: detail.homeTeamLogo,
-                alignment: Alignment.centerRight,
-              ),
-              _ScoreDisplay(
-                homeScore: detail.homeScore,
-                awayScore: detail.awayScore,
-                isUpcoming: _isUpcoming,
-                matchTime: detail.matchTime,
-              ),
-              _TeamPanel(
-                name: detail.awayTeam,
-                logoUrl: detail.awayTeamLogo,
-                alignment: Alignment.centerLeft,
-              ),
-            ],
+          const SizedBox(width: 12),
+          _ScoreDisplay(
+            homeScore: detail.homeScore,
+            awayScore: detail.awayScore,
+            isUpcoming: _isUpcoming,
+            matchTime: detail.matchTime,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _TeamPanel(
+              name: detail.awayTeam,
+              logoUrl: detail.awayTeamLogo,
+            ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _StatusChip extends StatelessWidget {
-  const _StatusChip({required this.isLive, required this.status});
-
-  final bool isLive;
-  final String status;
-
-  String get _displayStatus {
-    final upper = status.toUpperCase();
-    if (upper == 'NS') return '';
-    if (isLive) return 'LIVE';
-    return upper;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_displayStatus.isEmpty) return const SizedBox.shrink();
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
-      decoration: BoxDecoration(
-        color: isLive ? const Color(0xFFEF4444) : const Color(0xFF374151),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        _displayStatus,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: Colors.white,
-          fontWeight: FontWeight.w700,
-          fontSize: 11,
-        ),
       ),
     );
   }
@@ -132,28 +47,22 @@ class _TeamPanel extends StatelessWidget {
   const _TeamPanel({
     required this.name,
     required this.logoUrl,
-    required this.alignment,
   });
 
   final String name;
   final String logoUrl;
-  final Alignment alignment;
 
   @override
   Widget build(BuildContext context) {
-    final textAlign = alignment == Alignment.centerRight
-        ? TextAlign.right
-        : TextAlign.left;
     return Column(
-      crossAxisAlignment: alignment == Alignment.centerRight
-          ? CrossAxisAlignment.end
-          : CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         ClipOval(
           child: Container(
-            width: 76,
-            height: 76,
-            color: const Color(0xFF0F172A),
+            width: 68,
+            height: 68,
+            color: const Color(0xFF050B1A),
             child: logoUrl.isNotEmpty
                 ? CachedNetworkImage(
                     imageUrl: logoUrl,
@@ -171,11 +80,11 @@ class _TeamPanel extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        SizedBox(
-          width: 94,
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 88),
           child: Text(
             name,
-            textAlign: textAlign,
+            textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
               color: Colors.white,
               fontWeight: FontWeight.w800,
@@ -208,21 +117,38 @@ class _ScoreDisplay extends StatelessWidget {
     if (isUpcoming) {
       return Text(
         matchTime,
-        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+        textAlign: TextAlign.center,
+        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
           color: Colors.white,
-          fontWeight: FontWeight.w700,
-          fontSize: 18,
+          fontWeight: FontWeight.w900,
+          fontSize: 22,
+          letterSpacing: 0.5,
         ),
       );
     }
 
-    return Text(
-      '$homeScore - $awayScore',
-      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-        color: Colors.white,
-        fontWeight: FontWeight.w900,
-        letterSpacing: 0.5,
-      ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          '$homeScore - $awayScore',
+          style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+            color: Colors.white,
+            fontWeight: FontWeight.w900,
+            fontSize: 30,
+            letterSpacing: 0.5,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          matchTime,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: Colors.white70,
+            fontWeight: FontWeight.w600,
+            fontSize: 12,
+          ),
+        ),
+      ],
     );
   }
 }
