@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fover/features/matches/domain/models/match_event_model.dart';
 import 'package:fover/features/matches/providers/match_events_provider.dart';
+import 'package:fover/features/matches/providers/match_detail_provider.dart';
 
 class MatchDetailDetailsSection extends ConsumerWidget {
   const MatchDetailDetailsSection({
@@ -36,16 +37,141 @@ class MatchDetailDetailsSection extends ConsumerWidget {
       return const _SectionPlaceholder(title: 'No match events available yet.');
     }
 
+    // Use match detail for scores/status to generate HT/FT dividers
+    final matchState = ref.watch(matchDetailProvider(matchId));
+    final matchInfo = matchState.matchDetail;
+
+    // Sort events by minute and extraMinute
+    final sorted = List<MatchEventInfo>.from(events)
+      ..sort((a, b) {
+        final aTotal = a.minute * 100 + a.extraMinute;
+        final bTotal = b.minute * 100 + b.extraMinute;
+        return aTotal.compareTo(bTotal);
+      });
+
+    // Determine whether to show HT/FT based on match status/elapsed
+    final showHT = matchInfo != null && (matchInfo.elapsed > 45 || matchInfo.status.toLowerCase().contains('ht'));
+    final showFT = matchInfo != null && (matchInfo.status.toLowerCase().contains('ft') || matchInfo.status.toLowerCase().contains('full'));
+
+    // Compute running score and build display items with optional period dividers
+    final items = <_DisplayItem>[];
+    var homeScore = 0;
+    var awayScore = 0;
+
+    // find last first-half event index
+    var lastFirstHalfIndex = -1;
+    for (var i = 0; i < sorted.length; i++) {
+      if (sorted[i].minute <= 45) lastFirstHalfIndex = i;
+    }
+
+    for (var i = 0; i < sorted.length; i++) {
+      // if we need HT divider before first second-half event and there were no first-half events
+      if (showHT && lastFirstHalfIndex == -1 && sorted[i].minute > 45 && items.isEmpty) {
+        items.add(_DisplayItem.period('HT', 0, 0));
+      }
+
+      final e = sorted[i];
+
+      String? scoreSnapshot;
+      final isGoalEvent = e.type == MatchEventType.goal || e.type == MatchEventType.ownGoal || e.type == MatchEventType.penalty;
+      if (isGoalEvent) {
+        if (e.teamId == homeTeamId) {
+          homeScore++;
+        } else if (e.teamId == awayTeamId) {
+          awayScore++;
+        }
+        scoreSnapshot = '$homeScore-$awayScore';
+      }
+
+      // Add event with score snapshot for goals
+      items.add(_DisplayItem.event(e, score: scoreSnapshot));
+
+      // insert HT divider after last first-half event
+      if (showHT && i == lastFirstHalfIndex && lastFirstHalfIndex != -1) {
+        items.add(_DisplayItem.period('HT', homeScore, awayScore));
+      }
+    }
+
+    // FT divider
+    if (showFT) {
+      // prefer final score from matchInfo (showFT implies matchInfo != null)
+      final fHome = matchInfo.homeScore;
+      final fAway = matchInfo.awayScore;
+      items.add(_DisplayItem.period('FT', fHome, fAway));
+    }
+
+    final venueText = [matchInfo?.venueName, matchInfo?.venueCity]
+        .where((entry) => entry != null && entry.trim().isNotEmpty)
+        .join(', ');
+    final locationText = matchInfo?.venueCity?.trim() ?? 'Not available';
+    const placeholderText = 'Not available';
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const _SectionHeading(title: 'Match Timeline'),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(0xFF0E1220),
+            borderRadius: BorderRadius.circular(18),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const MatchDetailSectionHeader(title: 'Events'),
+              const SizedBox(height: 12),
+              ...items.map((it) {
+                if (it.isPeriod) {
+                  return _ScoreDivider(label: it.label!, home: it.home!, away: it.away!);
+                }
+                final ev = it.event!;
+                return _FotMobRow(event: ev, homeTeamId: homeTeamId, awayTeamId: awayTeamId, score: it.score);
+              }),
+            ],
+          ),
+        ),
         const SizedBox(height: 16),
-        ...events.map(
-          (event) => _TimelineEvent(
-            event: event,
-            homeTeamId: homeTeamId,
-            awayTeamId: awayTeamId,
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(0xFF0E1220),
+            borderRadius: BorderRadius.circular(18),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const MatchDetailSectionHeader(title: 'Match Information'),
+              const SizedBox(height: 16),
+              MatchDetailInfoRow(
+                icon: '📍',
+                title: 'Venue',
+                subtitle: venueText.isNotEmpty ? venueText : placeholderText,
+              ),
+              const SizedBox(height: 12),
+              MatchDetailInfoRow(
+                icon: '🌍',
+                title: 'Location',
+                subtitle: locationText.isNotEmpty ? locationText : placeholderText,
+              ),
+              const SizedBox(height: 12),
+              const MatchDetailInfoRow(
+                icon: '☁',
+                title: 'Weather',
+                subtitle: placeholderText,
+              ),
+              const SizedBox(height: 12),
+              const MatchDetailInfoRow(
+                icon: '👨‍⚖',
+                title: 'Referee',
+                subtitle: placeholderText,
+              ),
+              const SizedBox(height: 12),
+              const MatchDetailInfoRow(
+                icon: '🏟',
+                title: 'Attendance',
+                subtitle: placeholderText,
+              ),
+            ],
           ),
         ),
       ],
@@ -53,167 +179,309 @@ class MatchDetailDetailsSection extends ConsumerWidget {
   }
 }
 
-class _SectionHeading extends StatelessWidget {
-  const _SectionHeading({required this.title});
+class MatchDetailSectionHeader extends StatelessWidget {
+  const MatchDetailSectionHeader({super.key, required this.title});
   final String title;
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      title,
-      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            color: Colors.white,
-            fontWeight: FontWeight.w800,
-          ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFF11131D),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        title,
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Colors.white70,
+              fontWeight: FontWeight.w700,
+            ),
+      ),
     );
   }
 }
 
-class _TimelineEvent extends StatelessWidget {
-  const _TimelineEvent({
-    required this.event,
-    required this.homeTeamId,
-    required this.awayTeamId,
+class MatchDetailInfoRow extends StatelessWidget {
+  const MatchDetailInfoRow({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.subtitle,
   });
+
+  final String icon;
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          icon,
+          style: Theme.of(context).textTheme.bodyLarge,
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Colors.white70,
+                      fontWeight: FontWeight.w700,
+                    ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                subtitle,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Colors.white60,
+                      height: 1.4,
+                    ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _FotMobRow extends StatelessWidget {
+  const _FotMobRow({required this.event, required this.homeTeamId, required this.awayTeamId, this.score});
 
   final MatchEventInfo event;
   final int homeTeamId;
   final int awayTeamId;
+  final String? score;
 
-  Color get _accentColor {
-    switch (event.type) {
-      case MatchEventType.goal:
-      case MatchEventType.ownGoal:
-      case MatchEventType.penalty:
-        return const Color(0xFF22C55E);
-      case MatchEventType.yellowCard:
-        return const Color(0xFFFACC15);
-      case MatchEventType.redCard:
-        return const Color(0xFFEF4444);
-      case MatchEventType.substitution:
-        return const Color(0xFF3B82F6);
-      case MatchEventType.varReview:
-        return const Color(0xFF8B5CF6);
-      case MatchEventType.halftime:
-      case MatchEventType.fulltime:
-        return const Color(0xFF9CA3AF);
-      default:
-        return const Color(0xFF8B5CF6);
-    }
+  String _formatMinute(MatchEventInfo e) {
+    final base = e.minute.toString();
+    return e.extraMinute > 0 ? '$base+${e.extraMinute}\'' : '$base\'';
   }
 
-  IconData get _icon {
-    switch (event.type) {
-      case MatchEventType.goal:
-      case MatchEventType.ownGoal:
-        return Icons.sports_soccer;
-      case MatchEventType.penalty:
-        return Icons.shield;
-      case MatchEventType.yellowCard:
-        return Icons.crop_square;
-      case MatchEventType.redCard:
-        return Icons.crop_square;
-      case MatchEventType.substitution:
-        return Icons.swap_horiz;
-      case MatchEventType.varReview:
-        return Icons.tv;
-      case MatchEventType.kickoff:
-        return Icons.sports_score;
-      case MatchEventType.halftime:
-      case MatchEventType.fulltime:
-        return Icons.flag;
-      default:
-        return Icons.info;
+  String? _scoreLabel(MatchEventInfo e) {
+    final raw = e.raw;
+    if (raw['score'] != null) {
+      return raw['score'].toString();
     }
+    final home = raw['home_score'] ?? raw['score_home'] ?? raw['team_home_score'] ?? raw['home'] ?? raw['homeScore'];
+    final away = raw['away_score'] ?? raw['score_away'] ?? raw['team_away_score'] ?? raw['away'] ?? raw['awayScore'];
+    if (home != null && away != null) {
+      return '${home.toString()}-${away.toString()}';
+    }
+    return null;
   }
 
-  String get _eventMinute {
-    final base = event.minute.toString();
-    return event.extraMinute > 0 ? '$base+${event.extraMinute}' : base;
+  List<String> _parseSubstitution(MatchEventInfo e) {
+    final raw = e.raw;
+    dynamic inPlayer = raw['sub_on'] ?? raw['player_in'] ?? raw['substitute_in'] ?? raw['playerIn'] ?? raw['in_player'] ?? raw['sub_in'] ?? raw['on'] ?? raw['in'];
+    dynamic outPlayer = raw['sub_off'] ?? raw['player_out'] ?? raw['substitute_out'] ?? raw['playerOut'] ?? raw['out_player'] ?? raw['sub_out'] ?? raw['off'] ?? raw['out'];
+
+    String extractName(dynamic value) {
+      if (value == null) return '';
+      if (value is Map) {
+        return (value['name'] ?? value['player_name'] ?? value['full_name'] ?? value['fullName'] ?? '').toString();
+      }
+      return value.toString();
+    }
+
+    if (inPlayer == null || outPlayer == null) {
+      for (final entry in raw.entries) {
+        if (entry.value is Map) {
+          final nested = entry.value as Map<String, dynamic>;
+          inPlayer ??= nested['sub_on'] ?? nested['player_in'] ?? nested['substitute_in'] ?? nested['playerIn'] ?? nested['in_player'] ?? nested['sub_in'] ?? nested['on'] ?? nested['in'];
+          outPlayer ??= nested['sub_off'] ?? nested['player_out'] ?? nested['substitute_out'] ?? nested['playerOut'] ?? nested['out_player'] ?? nested['sub_out'] ?? nested['off'] ?? nested['out'];
+        }
+      }
+    }
+
+    if (inPlayer != null || outPlayer != null) {
+      return [extractName(inPlayer), extractName(outPlayer)];
+    }
+
+    final detail = e.detail;
+    final arrowMatch = RegExp(r"(.+?)\s*[->→]\s*(.+)").firstMatch(detail);
+    if (arrowMatch != null) {
+      return [arrowMatch.group(1)!.trim(), arrowMatch.group(2)!.trim()];
+    }
+
+    final parts = detail.split(RegExp(r"[,;/]"));
+    if (parts.length >= 2) {
+      return [parts[0].trim(), parts[1].trim()];
+    }
+
+    return ['', ''];
   }
 
-  String get _subtitle {
-    final parts = <String>[];
-    if (event.description.isNotEmpty) parts.add(event.description);
-    if (event.assistName != null && event.assistName!.isNotEmpty) {
-      parts.add('Assist: ${event.assistName}');
+  Widget _buildSubstitutionLine(BuildContext context, String icon, String label, TextAlign align) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 1.0),
+      child: Text(
+        '$icon $label',
+        textAlign: align,
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: icon == '🟢' ? Colors.greenAccent : Colors.redAccent,
+          fontWeight: FontWeight.w600,
+          height: 1.1,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEventContent(BuildContext context, bool isHome) {
+    final isSub = event.type == MatchEventType.substitution;
+    final rawScore = _scoreLabel(event);
+    final scoreLabel = score ?? rawScore;
+    final playerName = event.playerName.isNotEmpty ? event.playerName : event.detail;
+    final textAlign = isHome ? TextAlign.left : TextAlign.right;
+    final crossAxis = isHome ? CrossAxisAlignment.start : CrossAxisAlignment.end;
+
+    if (isSub) {
+      final inName = event.assistName?.trim();
+      final outName = event.playerName.isNotEmpty ? event.playerName.trim() : null;
+      final fallback = _parseSubstitution(event);
+      final inLabel = inName?.isNotEmpty == true ? inName : (fallback[0].isNotEmpty ? fallback[0] : null);
+      final outLabel = outName?.isNotEmpty == true ? outName : (fallback[1].isNotEmpty ? fallback[1] : null);
+      debugPrint('[MatchTimeline][subst] type=${event.type} detail="${event.detail}" playerName="${event.playerName}" assistName="${event.assistName}" in="$inLabel" out="$outLabel" rawKeys=${event.raw.keys.toList()}');
+
+      if (inLabel == null && outLabel == null) {
+        final fallbackText = event.detail.isNotEmpty ? event.detail : (event.playerName.isNotEmpty ? event.playerName : 'Substitution');
+        return Text(
+          fallbackText,
+          textAlign: textAlign,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+            height: 1.2,
+          ),
+        );
+      }
+
+      return Column(
+        crossAxisAlignment: crossAxis,
+        children: [
+          if (inLabel != null)
+            _buildSubstitutionLine(context, '🟢', inLabel, textAlign),
+          if (outLabel != null)
+            _buildSubstitutionLine(context, '🔴', outLabel, textAlign),
+        ],
+      );
     }
-    return parts.join(' · ');
+
+    final primaryText = event.type == MatchEventType.yellowCard
+        ? '🟨 $playerName'
+        : event.type == MatchEventType.redCard
+            ? '🟥 $playerName'
+            : (event.type == MatchEventType.goal || event.type == MatchEventType.ownGoal || event.type == MatchEventType.penalty)
+                ? '⚽ $playerName${scoreLabel != null ? ' ($scoreLabel)' : ''}'
+                : playerName;
+
+    return Column(
+      crossAxisAlignment: crossAxis,
+      children: [
+        Text(
+          primaryText,
+          textAlign: textAlign,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+            height: 1.2,
+          ),
+        ),
+        if ((event.type == MatchEventType.goal || event.type == MatchEventType.ownGoal || event.type == MatchEventType.penalty) && event.assistName != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 1.0),
+            child: Text(
+              'Assist by ${event.assistName}',
+              textAlign: textAlign,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Colors.white70,
+                fontWeight: FontWeight.w400,
+                height: 1.2,
+              ),
+            ),
+          ),
+      ],
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final isHome = event.teamId == homeTeamId;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFF111827),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white12),
+    final minute = _formatMinute(event);
+    final minuteWidget = SizedBox(
+      width: 48,
+      child: Text(
+        minute,
+        textAlign: isHome ? TextAlign.left : TextAlign.right,
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.white70),
       ),
+    );
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2.0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: Color.fromRGBO(
-                (_accentColor.r * 255.0).round().clamp(0, 255),
-                (_accentColor.g * 255.0).round().clamp(0, 255),
-                (_accentColor.b * 255.0).round().clamp(0, 255),
-                0.18,
-              ),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(_icon, color: _accentColor, size: 18),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '$_eventMinute ${event.teamName}',
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                      ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  event.playerName.isNotEmpty ? event.playerName : event.detail,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.white70,
-                        fontWeight: FontWeight.w600,
-                      ),
-                ),
-                if (_subtitle.isNotEmpty) ...[
-                  const SizedBox(height: 6),
-                  Text(
-                    _subtitle,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.white54,
-                        ),
-                  ),
-                ],
+        children: isHome
+            ? [
+                minuteWidget,
+                const SizedBox(width: 8),
+                Expanded(child: _buildEventContent(context, isHome)),
+              ]
+            : [
+                Expanded(child: _buildEventContent(context, isHome)),
+                const SizedBox(width: 8),
+                minuteWidget,
               ],
-            ),
-          ),
-          const SizedBox(width: 12),
+      ),
+    );
+  }
+}
+
+class _ScoreDivider extends StatelessWidget {
+  const _ScoreDivider({required this.label, required this.home, required this.away});
+  final String label;
+  final int home;
+  final int away;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2.0),
+      child: Row(
+        children: [
+          const Expanded(child: Divider(color: Colors.white24, thickness: 1)),
+          const SizedBox(width: 8),
           Text(
-            isHome ? 'Home' : 'Away',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.white54,
-                  fontWeight: FontWeight.w600,
-                ),
+            '$label $home-$away',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.white54, fontWeight: FontWeight.w600),
           ),
+          const SizedBox(width: 8),
+          const Expanded(child: Divider(color: Colors.white24, thickness: 1)),
         ],
       ),
     );
   }
+}
+
+class _DisplayItem {
+  const _DisplayItem._({this.event, this.label, this.home, this.away, this.score});
+
+  factory _DisplayItem.event(MatchEventInfo e, {String? score}) => _DisplayItem._(event: e, score: score);
+  factory _DisplayItem.period(String label, int home, int away) => _DisplayItem._(label: label, home: home, away: away);
+
+  final MatchEventInfo? event;
+  final String? label;
+  final int? home;
+  final int? away;
+  final String? score;
+
+  bool get isPeriod => label != null;
 }
 
 class _SectionPlaceholder extends StatelessWidget {

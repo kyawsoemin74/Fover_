@@ -11,6 +11,12 @@ class MatchDetailHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final status = detail.status.toLowerCase();
+    final isUpcoming = _isUpcoming || status.contains('upcoming');
+    final isFinished = status.contains('ft') || status.contains('full') || status.contains('finished');
+    final isHalfTime = status.contains('ht');
+    final isLive = !isUpcoming && !isFinished;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
@@ -27,8 +33,12 @@ class MatchDetailHeader extends StatelessWidget {
           _ScoreDisplay(
             homeScore: detail.homeScore,
             awayScore: detail.awayScore,
-            isUpcoming: _isUpcoming,
+            isUpcoming: isUpcoming,
+            isFinished: isFinished,
+            isHalfTime: isHalfTime,
+            isLive: isLive,
             matchTime: detail.matchTime,
+            elapsed: detail.elapsed,
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -104,13 +114,21 @@ class _ScoreDisplay extends StatelessWidget {
     required this.homeScore,
     required this.awayScore,
     required this.isUpcoming,
+    required this.isFinished,
+    required this.isHalfTime,
+    required this.isLive,
     required this.matchTime,
+    required this.elapsed,
   });
 
   final int homeScore;
   final int awayScore;
   final bool isUpcoming;
+  final bool isFinished;
+  final bool isHalfTime;
+  final bool isLive;
   final String matchTime;
+  final int elapsed;
 
   @override
   Widget build(BuildContext context) {
@@ -141,7 +159,13 @@ class _ScoreDisplay extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         Text(
-          matchTime,
+          isFinished
+              ? 'FT'
+              : isHalfTime
+                  ? 'HT'
+                  : isLive
+                      ? (elapsed > 0 ? "${elapsed}'" : matchTime)
+                      : matchTime,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
             color: Colors.white70,
             fontWeight: FontWeight.w600,

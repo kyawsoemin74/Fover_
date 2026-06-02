@@ -48,7 +48,7 @@ class MatchLineupNotifier extends StateNotifier<MatchLineupState> {
   }
 }
 
-final matchLineupProvider = StateNotifierProvider.autoDispose.family<MatchLineupNotifier, MatchLineupState, int>(
+final matchLineupProvider = StateNotifierProvider.family<MatchLineupNotifier, MatchLineupState, int>(
   (ref, matchId) {
     final repository = ref.watch(matchDetailRepositoryProvider);
     return MatchLineupNotifier(repository, matchId);

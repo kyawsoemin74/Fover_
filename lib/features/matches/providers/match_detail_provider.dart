@@ -8,7 +8,7 @@ final matchDetailRepositoryProvider = Provider<MatchDetailRepository>((ref) {
   return MatchDetailRepositoryImpl(dioClient: DioClient(dio: ref.watch(dioProvider)));
 });
 
-final matchDetailProvider = StateNotifierProvider.autoDispose.family<MatchDetailNotifier, MatchDetailState, int>((ref, matchId) {
+final matchDetailProvider = StateNotifierProvider.family<MatchDetailNotifier, MatchDetailState, int>((ref, matchId) {
   final repository = ref.watch(matchDetailRepositoryProvider);
   final notifier = MatchDetailNotifier(repository);
 

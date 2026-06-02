@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:fover/core/config/app_config.dart';
 import 'package:fover/core/constants/api_constants.dart';
@@ -16,7 +17,7 @@ class MatchApiService {
 
   Future<ApiResult<List<LeagueResponseModel>>> fetchLiveMatches() async {
     try {
-      final response = await _execute(() => _dioClient.dio.get(ApiConstants.liveMatches));
+      final response = await _execute('liveMatches', () => _dioClient.dio.get(ApiConstants.liveMatches));
       final items = _extractList(response.data);
       final leagues = _groupMatches(items);
       return ApiResult.success(leagues);
@@ -31,6 +32,7 @@ class MatchApiService {
     try {
       final formattedDate = DateFormat('yyyy-MM-dd').format(date);
       final response = await _execute(
+        'matchesByDate',
         () => _dioClient.dio.get(ApiConstants.matchesByDate(formattedDate)),
       );
       final items = _extractList(response.data);
@@ -45,7 +47,7 @@ class MatchApiService {
 
   Future<ApiResult<MatchDetailResponseModel>> fetchMatchDetail(int matchId) async {
     try {
-      final response = await _execute(() => _dioClient.dio.get(ApiConstants.matchById(matchId)));
+      final response = await _execute('matchDetail', () => _dioClient.dio.get(ApiConstants.matchById(matchId)));
       final payload = response.data;
       if (payload is Map<String, dynamic>) {
         return ApiResult.success(MatchDetailResponseModel.fromJson(payload));
@@ -60,7 +62,7 @@ class MatchApiService {
 
   Future<ApiResult<dynamic>> fetchMatchEvents(int matchId) async {
     try {
-      final response = await _execute(() => _dioClient.dio.get(ApiConstants.matchEvents(matchId)));
+      final response = await _execute('matchEvents', () => _dioClient.dio.get(ApiConstants.matchEvents(matchId)));
       return ApiResult.success(response.data);
     } on DioException catch (exception, stackTrace) {
       return ApiResult.failure(DioErrorMapper.map(exception), stackTrace);
@@ -71,7 +73,7 @@ class MatchApiService {
 
   Future<ApiResult<dynamic>> fetchMatchLineup(int matchId) async {
     try {
-      final response = await _execute(() => _dioClient.dio.get(ApiConstants.matchLineup(matchId)));
+      final response = await _execute('matchLineup', () => _dioClient.dio.get(ApiConstants.matchLineup(matchId)));
       return ApiResult.success(response.data);
     } on DioException catch (exception, stackTrace) {
       return ApiResult.failure(DioErrorMapper.map(exception), stackTrace);
@@ -82,7 +84,7 @@ class MatchApiService {
 
   Future<ApiResult<dynamic>> fetchMatchOdds(int matchId) async {
     try {
-      final response = await _execute(() => _dioClient.dio.get(ApiConstants.matchOdds(matchId)));
+      final response = await _execute('matchOdds', () => _dioClient.dio.get(ApiConstants.matchOdds(matchId)));
       return ApiResult.success(response.data);
     } on DioException catch (exception, stackTrace) {
       return ApiResult.failure(DioErrorMapper.map(exception), stackTrace);
@@ -93,7 +95,7 @@ class MatchApiService {
 
   Future<ApiResult<dynamic>> fetchMatchH2H(int matchId, int homeTeamId, int awayTeamId) async {
     try {
-      final response = await _execute(() => _dioClient.dio.get(ApiConstants.matchH2H(matchId, homeTeamId, awayTeamId)));
+      final response = await _execute('matchH2H', () => _dioClient.dio.get(ApiConstants.matchH2H(matchId, homeTeamId, awayTeamId)));
       return ApiResult.success(response.data);
     } on DioException catch (exception, stackTrace) {
       return ApiResult.failure(DioErrorMapper.map(exception), stackTrace);
@@ -104,7 +106,7 @@ class MatchApiService {
 
   Future<ApiResult<dynamic>> fetchMatchStats(int matchId) async {
     try {
-      final response = await _execute(() => _dioClient.dio.get(ApiConstants.matchById(matchId)));
+      final response = await _execute('matchStats', () => _dioClient.dio.get(ApiConstants.matchById(matchId)));
       return ApiResult.success(response.data);
     } on DioException catch (exception, stackTrace) {
       return ApiResult.failure(DioErrorMapper.map(exception), stackTrace);
@@ -113,16 +115,29 @@ class MatchApiService {
     }
   }
 
-  Future<Response> _execute(Future<Response> Function() request) async {
+  Future<Response> _execute(String requestLabel, Future<Response> Function() request) async {
     var attempt = 0;
     while (true) {
+      attempt += 1;
       try {
-        attempt += 1;
-        return await request().timeout(
-              Duration(seconds: AppConfig.receiveTimeout),
-            );
-      } on DioException catch (_) {
-        if (attempt >= AppConfig.retryAttempts) rethrow;
+        debugPrint('[MatchApiService] request=$requestLabel attempt=$attempt start');
+        final result = await request().timeout(
+          Duration(seconds: AppConfig.receiveTimeout),
+        );
+        debugPrint('[MatchApiService] request=$requestLabel attempt=$attempt success');
+        return result;
+      } on DioException catch (exception) {
+        final statusCode = exception.response?.statusCode;
+        debugPrint('[MatchApiService] request=$requestLabel attempt=$attempt failed status=$statusCode message=${exception.message}');
+        if (statusCode == 404) {
+          debugPrint('[MatchApiService] request=$requestLabel received 404; not retrying');
+          rethrow;
+        }
+        if (attempt >= AppConfig.retryAttempts) {
+          debugPrint('[MatchApiService] request=$requestLabel reached max attempts=$attempt; rethrowing');
+          rethrow;
+        }
+        debugPrint('[MatchApiService] request=$requestLabel retrying after ${AppConfig.retryDelayMillis}ms');
         await Future<void>.delayed(const Duration(milliseconds: AppConfig.retryDelayMillis));
       }
     }

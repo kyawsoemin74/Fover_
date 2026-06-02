@@ -21,7 +21,6 @@ final homeProvider = StateNotifierProvider<HomeNotifier, HomeState>((ref) {
 class HomeNotifier extends StateNotifier<HomeState> {
   HomeNotifier(this._repository) : super(HomeState(status: HomeStatus.loading)) {
     loadMatches();
-    _initializeLiveRefresh();
   }
 
   final HomeRepository _repository;
@@ -87,12 +86,20 @@ class HomeNotifier extends StateNotifier<HomeState> {
     }
   }
 
-  void _initializeLiveRefresh() {
+  /// Start the periodic live refresh. Call this when the Home page is visible.
+  void startLiveRefresh() {
+    _liveRefreshTimer?.cancel();
     _liveRefreshTimer = Timer.periodic(const Duration(seconds: 30), (_) async {
       if (DateUtils.isSameDay(state.selectedDate, DateTime.now()) && state.status == HomeStatus.loaded) {
         await _refreshLiveMatches();
       }
     });
+  }
+
+  /// Stop the periodic live refresh. Call this when the Home page is not visible.
+  void stopLiveRefresh() {
+    _liveRefreshTimer?.cancel();
+    _liveRefreshTimer = null;
   }
 
   Future<void> _refreshLiveMatches() async {

@@ -48,7 +48,7 @@ class MatchOddsNotifier extends StateNotifier<MatchOddsState> {
   }
 }
 
-final matchOddsProvider = StateNotifierProvider.autoDispose.family<MatchOddsNotifier, MatchOddsState, int>(
+final matchOddsProvider = StateNotifierProvider.family<MatchOddsNotifier, MatchOddsState, int>(
   (ref, matchId) {
     final repository = ref.watch(matchDetailRepositoryProvider);
     return MatchOddsNotifier(repository, matchId);

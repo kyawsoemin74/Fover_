@@ -60,7 +60,7 @@ class MatchH2HNotifier extends StateNotifier<MatchH2HState> {
   }
 }
 
-final matchH2HProvider = StateNotifierProvider.autoDispose.family<MatchH2HNotifier, MatchH2HState, MatchH2HRequest>(
+final matchH2HProvider = StateNotifierProvider.family<MatchH2HNotifier, MatchH2HState, MatchH2HRequest>(
   (ref, request) {
     final repository = ref.watch(matchDetailRepositoryProvider);
     return MatchH2HNotifier(repository, request);

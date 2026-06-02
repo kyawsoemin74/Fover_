@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fover/features/matches/domain/match_detail_repository.dart';
 import 'package:fover/features/matches/domain/models/match_event_model.dart';
@@ -41,14 +42,16 @@ class MatchEventsNotifier extends StateNotifier<MatchEventsState> {
     state = state.copyWith(status: MatchEventsStatus.loading, errorMessage: null);
     final result = await _repository.fetchMatchEvents(_matchId);
     if (result.isSuccess) {
-      state = state.copyWith(status: MatchEventsStatus.loaded, events: result.data ?? const []);
+      final events = result.data ?? const [];
+      debugPrint('[MatchEventsNotifier] loaded ${events.length} events: ${events.map((e) => '${e.minute}+${e.extraMinute} rawMinute=${e.raw['time_elapsed'] ?? e.raw['elapsed'] ?? e.raw['minute'] ?? e.raw['time']} rawExtra=${e.raw['time_extra'] ?? e.raw['extra'] ?? e.raw['extra_minute']}').join('; ')}');
+      state = state.copyWith(status: MatchEventsStatus.loaded, events: events);
     } else {
       state = state.copyWith(status: MatchEventsStatus.error, errorMessage: result.error);
     }
   }
 }
 
-final matchEventsProvider = StateNotifierProvider.autoDispose.family<MatchEventsNotifier, MatchEventsState, int>(
+final matchEventsProvider = StateNotifierProvider.family<MatchEventsNotifier, MatchEventsState, int>(
   (ref, matchId) {
     final repository = ref.watch(matchDetailRepositoryProvider);
     return MatchEventsNotifier(repository, matchId);

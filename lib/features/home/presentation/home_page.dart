@@ -11,13 +11,34 @@ import 'package:fover/shared/widgets/home_loading_skeleton.dart';
 import 'package:fover/shared/widgets/league_card.dart';
 // match widgets are now built lazily inside LeagueCard
 
-class HomePage extends ConsumerWidget {
+class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
 
   static const _sectionPadding = EdgeInsets.symmetric(horizontal: 16);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends ConsumerState<HomePage> {
+  @override
+  void initState() {
+    super.initState();
+    // Start live refresh when the Home page is inserted into the tree
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(homeProvider.notifier).startLiveRefresh();
+    });
+  }
+
+  @override
+  void dispose() {
+    // Stop live refresh when Home page is removed
+    ref.read(homeProvider.notifier).stopLiveRefresh();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final homeState = ref.watch(homeProvider);
     final homeNotifier = ref.read(homeProvider.notifier);
     final favoritesState = ref.watch(favoritesProvider);
@@ -73,7 +94,7 @@ class HomePage extends ConsumerWidget {
           ),
           if (homeState.status == HomeStatus.loading || homeState.status == HomeStatus.initial)
             SliverPadding(
-              padding: _sectionPadding,
+              padding: HomePage._sectionPadding,
               sliver: const SliverToBoxAdapter(child: HomeLoadingSkeleton()),
             )
           else if (homeState.status == HomeStatus.error)
@@ -103,7 +124,7 @@ class HomePage extends ConsumerWidget {
             )
           else
             SliverPadding(
-              padding: _sectionPadding,
+              padding: HomePage._sectionPadding,
               sliver: SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
