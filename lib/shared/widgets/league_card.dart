@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fover/core/utils/country_flag_helper.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:fover/features/home/domain/models/match_model.dart';
 import 'package:fover/shared/widgets/match_card.dart';
 
@@ -14,6 +15,7 @@ class LeagueCard extends StatelessWidget {
     required this.matches,
     this.onMatchTap,
     this.countryFlagUrl,
+    this.leagueLogoUrl,
   });
 
   final String countryCode;
@@ -24,7 +26,7 @@ class LeagueCard extends StatelessWidget {
   final List<MatchInfo> matches;
   final ValueChanged<MatchInfo>? onMatchTap;
   final String? countryFlagUrl;
-
+  final String? leagueLogoUrl;
 
   String get _leagueLabel {
     if (countryCode.isNotEmpty) {
@@ -52,7 +54,10 @@ class LeagueCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(18),
                 onTap: onToggle,
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
@@ -60,12 +65,68 @@ class LeagueCard extends StatelessWidget {
                         width: 36,
                         height: 36,
                         decoration: BoxDecoration(
-                          color: theme.colorScheme.primary.withValues(alpha: 0.14),
+                          color: theme.colorScheme.primary.withValues(
+                            alpha: 0.14,
+                          ),
                           shape: BoxShape.circle,
                         ),
                         child: ClipOval(
-                          child: Center(
-                            child: CountryFlagHelper.buildCountryFlag(countryFlagUrl, size: 20),
+                          child: Builder(
+                            builder: (context) {
+                              final code = CountryFlagHelper.extractCountryCode(
+                                countryFlagUrl,
+                              );
+
+                              if (code != null && code.isNotEmpty) {
+                                return Center(
+                                  child: CountryFlagHelper.buildCountryFlag(
+                                    countryFlagUrl,
+                                    size: 20,
+                                  ),
+                                );
+                              }
+
+                              if (leagueLogoUrl != null &&
+                                  leagueLogoUrl!.isNotEmpty) {
+                                return CachedNetworkImage(
+                                  imageUrl: leagueLogoUrl!,
+                                  fit: BoxFit.cover,
+                                  width: 36,
+                                  height: 36,
+                                  placeholder: (_, __) => Center(
+                                    child: SizedBox(
+                                      width: 14,
+                                      height: 14,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.primary,
+                                      ),
+                                    ),
+                                  ),
+                                  errorWidget: (_, __, ___) => Center(
+                                    child: Icon(
+                                      Icons.emoji_events,
+                                      size: 18,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                );
+                              }
+
+                              return Center(
+                                child: Icon(
+                                  Icons.emoji_events,
+                                  size: 18,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                ),
+                              );
+                            },
                           ),
                         ),
                       ),
@@ -86,7 +147,9 @@ class LeagueCard extends StatelessWidget {
                         height: 26,
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
-                          color: theme.colorScheme.onSurface.withValues(alpha: 0.08),
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.08,
+                          ),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
