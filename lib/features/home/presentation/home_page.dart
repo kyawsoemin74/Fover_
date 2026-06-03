@@ -87,12 +87,11 @@ class _HomePageState extends ConsumerState<HomePage> {
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
             sliver: SliverToBoxAdapter(
-              child: const HomeSectionHeader(
-                title: '',
-              ),
+              child: const HomeSectionHeader(title: ''),
             ),
           ),
-          if (homeState.status == HomeStatus.loading || homeState.status == HomeStatus.initial)
+          if (homeState.status == HomeStatus.loading ||
+              homeState.status == HomeStatus.initial)
             SliverPadding(
               padding: HomePage._sectionPadding,
               sliver: const SliverToBoxAdapter(child: HomeLoadingSkeleton()),
@@ -101,10 +100,15 @@ class _HomePageState extends ConsumerState<HomePage> {
             SliverFillRemaining(
               hasScrollBody: false,
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 24,
+                ),
                 child: EmptyState(
                   title: 'Unable to load matches',
-                  message: homeState.errorMessage ?? 'Please check your connection and try again.',
+                  message:
+                      homeState.errorMessage ??
+                      'Please check your connection and try again.',
                   actionLabel: 'Retry',
                   onAction: homeNotifier.retry,
                 ),
@@ -113,10 +117,14 @@ class _HomePageState extends ConsumerState<HomePage> {
           else if (homeState.status == HomeStatus.empty)
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 24,
+                ),
                 child: EmptyState(
                   title: 'No Matches',
-                  message: 'No matches were found for the selected date. Try another day or pull to refresh.',
+                  message:
+                      'No matches were found for the selected date. Try another day or pull to refresh.',
                   actionLabel: 'Refresh',
                   onAction: homeNotifier.retry,
                 ),
@@ -126,36 +134,38 @@ class _HomePageState extends ConsumerState<HomePage> {
             SliverPadding(
               padding: HomePage._sectionPadding,
               sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final league = homeState.leagues[index];
-                    final expanded = homeState.expandedLeagueIds.contains(league.id);
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  final league = homeState.leagues[index];
+                  final expanded = homeState.expandedLeagueIds.contains(
+                    league.id,
+                  );
 
-                    return LeagueCard(
-                      countryCode: league.countryCode,
-                      countryFlagUrl: league.countryFlagUrl,
-                      leagueName: league.leagueName,
-                      matchCount: league.matches.length,
-                      expanded: expanded,
-                      onToggle: () => homeNotifier.toggleLeagueExpanded(league.id),
-                      matches: league.matches,
-                      onMatchTap: (match) => context.pushNamed(
-                        'matchDetail',
-                        pathParameters: {'matchId': match.matchId.toString()},
-                        queryParameters: {
-                          'homeTeamId': match.homeTeamId.toString(),
-                          'awayTeamId': match.awayTeamId.toString(),
-                        },
-                      ),
-                    );
-                  },
-                  childCount: homeState.leagues.length,
-                ),
+                  debugPrint(
+                    '[UI] leagueId=${league.id} countryFlagUrl=${league.countryFlagUrl} leagueLogoUrl=${league.leagueLogoUrl}',
+                  );
+                  return LeagueCard(
+                    countryCode: league.countryCode,
+                    countryFlagUrl: league.countryFlagUrl,
+                    leagueLogoUrl: league.leagueLogoUrl,
+                    leagueName: league.leagueName,
+                    matchCount: league.matches.length,
+                    expanded: expanded,
+                    onToggle: () =>
+                        homeNotifier.toggleLeagueExpanded(league.id),
+                    matches: league.matches,
+                    onMatchTap: (match) => context.pushNamed(
+                      'matchDetail',
+                      pathParameters: {'matchId': match.matchId.toString()},
+                      queryParameters: {
+                        'homeTeamId': match.homeTeamId.toString(),
+                        'awayTeamId': match.awayTeamId.toString(),
+                      },
+                    ),
+                  );
+                }, childCount: homeState.leagues.length),
               ),
             ),
-          const SliverPadding(
-            padding: EdgeInsets.only(bottom: 32),
-          ),
+          const SliverPadding(padding: EdgeInsets.only(bottom: 32)),
         ],
       ),
     );

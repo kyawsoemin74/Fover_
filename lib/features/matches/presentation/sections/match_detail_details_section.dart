@@ -103,8 +103,8 @@ class MatchDetailDetailsSection extends ConsumerWidget {
     final venueText = [matchInfo?.venueName, matchInfo?.venueCity]
         .where((entry) => entry != null && entry.trim().isNotEmpty)
         .join(', ');
-    final locationText = matchInfo?.venueCity?.trim() ?? 'Not available';
-    const placeholderText = 'Not available';
+    final locationText = matchInfo?.venueCity?.trim() ?? 'Data witeing...';
+    const placeholderText = 'Data witeing...';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

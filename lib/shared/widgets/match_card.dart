@@ -38,8 +38,8 @@ class MatchCard extends StatelessWidget {
     final isNS = normalizedStatus == 'NS' || normalizedStatus == 'UPCOMING' || normalizedStatus == 'SCHEDULED';
     final showScore = !isNS && score.isNotEmpty;
     final scoreParts = _parseScore(score);
-    final statusLabel = _formatStatus(status);
-    final teamBLine = isNS ? teamB : '$statusLabel $teamB';
+    final statusLine = _buildStatusLine(status);
+    final teamBLine = teamB;
 
     return Material(
       color: Colors.transparent,
@@ -58,21 +58,26 @@ class MatchCard extends StatelessWidget {
                   children: [
                     Text(
                       kickOffTime,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      isNS ? '' : statusLabel,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w700,
-                      ),
                       maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                      softWrap: false,
+                      overflow: TextOverflow.visible,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontSize: 13,
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
+                    if (statusLine.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        statusLine,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontSize: 13,
+                          color: theme.colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -150,12 +155,45 @@ class MatchCard extends StatelessWidget {
     );
   }
 
-  String _formatStatus(String status) {
+  String _buildStatusLine(String status) {
     final normalized = status.toUpperCase();
-    if (normalized == 'LIVE' || normalized == 'HT' || normalized == 'FT') {
-      return normalized;
+    if (normalized == 'NS' || normalized == 'UPCOMING' || normalized == 'SCHEDULED') {
+      return '';
     }
-    return status;
+
+    if (normalized == 'HT') {
+      return 'HT';
+    }
+
+    if (normalized == 'FT') {
+      return 'FT';
+    }
+
+    if (_isLiveStatus(normalized)) {
+      final formattedMinute = _formatLiveMinute(status);
+      return formattedMinute;
+    }
+
+    return '';
+  }
+
+  bool _isLiveStatus(String normalizedStatus) {
+    return normalizedStatus.contains('LIVE') || normalizedStatus.contains('1H') || normalizedStatus.contains('2H');
+  }
+
+  String _formatLiveMinute(String status) {
+    final match = RegExp(r"(\d{1,3})(?:\s*\+\s*(\d{1,2}))?\s*'?", caseSensitive: false).firstMatch(status);
+    if (match == null) {
+      return '';
+    }
+
+    final base = match.group(1);
+    final extra = match.group(2);
+    if (base == null || base.isEmpty) {
+      return '';
+    }
+
+    return extra != null && extra.isNotEmpty ? '$base+${extra}\'' : '$base\'';
   }
 
   List<String> _parseScore(String value) {

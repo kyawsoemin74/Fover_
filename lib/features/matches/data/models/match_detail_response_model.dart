@@ -104,7 +104,7 @@ class MatchDetailResponseModel {
   static String _formatLocalTime(String rawTime) {
     try {
       final parsed = DateTime.parse(rawTime).toLocal();
-      return DateFormat('HH:mm').format(parsed);
+      return DateFormat('h:mm a').format(parsed);
     } catch (_) {
       return rawTime;
     }

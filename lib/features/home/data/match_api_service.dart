@@ -17,7 +17,10 @@ class MatchApiService {
 
   Future<ApiResult<List<LeagueResponseModel>>> fetchLiveMatches() async {
     try {
-      final response = await _execute('liveMatches', () => _dioClient.dio.get(ApiConstants.liveMatches));
+      final response = await _execute(
+        'liveMatches',
+        () => _dioClient.dio.get(ApiConstants.liveMatches),
+      );
       final items = _extractList(response.data);
       final leagues = _groupMatches(items);
       return ApiResult.success(leagues);
@@ -28,7 +31,9 @@ class MatchApiService {
     }
   }
 
-  Future<ApiResult<List<LeagueResponseModel>>> fetchMatchesByDate(DateTime date) async {
+  Future<ApiResult<List<LeagueResponseModel>>> fetchMatchesByDate(
+    DateTime date,
+  ) async {
     try {
       final formattedDate = DateFormat('yyyy-MM-dd').format(date);
       final response = await _execute(
@@ -45,9 +50,14 @@ class MatchApiService {
     }
   }
 
-  Future<ApiResult<MatchDetailResponseModel>> fetchMatchDetail(int matchId) async {
+  Future<ApiResult<MatchDetailResponseModel>> fetchMatchDetail(
+    int matchId,
+  ) async {
     try {
-      final response = await _execute('matchDetail', () => _dioClient.dio.get(ApiConstants.matchById(matchId)));
+      final response = await _execute(
+        'matchDetail',
+        () => _dioClient.dio.get(ApiConstants.matchById(matchId)),
+      );
       final payload = response.data;
       if (payload is Map<String, dynamic>) {
         return ApiResult.success(MatchDetailResponseModel.fromJson(payload));
@@ -62,7 +72,10 @@ class MatchApiService {
 
   Future<ApiResult<dynamic>> fetchMatchEvents(int matchId) async {
     try {
-      final response = await _execute('matchEvents', () => _dioClient.dio.get(ApiConstants.matchEvents(matchId)));
+      final response = await _execute(
+        'matchEvents',
+        () => _dioClient.dio.get(ApiConstants.matchEvents(matchId)),
+      );
       return ApiResult.success(response.data);
     } on DioException catch (exception, stackTrace) {
       return ApiResult.failure(DioErrorMapper.map(exception), stackTrace);
@@ -73,7 +86,10 @@ class MatchApiService {
 
   Future<ApiResult<dynamic>> fetchMatchLineup(int matchId) async {
     try {
-      final response = await _execute('matchLineup', () => _dioClient.dio.get(ApiConstants.matchLineup(matchId)));
+      final response = await _execute(
+        'matchLineup',
+        () => _dioClient.dio.get(ApiConstants.matchLineup(matchId)),
+      );
       return ApiResult.success(response.data);
     } on DioException catch (exception, stackTrace) {
       return ApiResult.failure(DioErrorMapper.map(exception), stackTrace);
@@ -84,7 +100,10 @@ class MatchApiService {
 
   Future<ApiResult<dynamic>> fetchMatchOdds(int matchId) async {
     try {
-      final response = await _execute('matchOdds', () => _dioClient.dio.get(ApiConstants.matchOdds(matchId)));
+      final response = await _execute(
+        'matchOdds',
+        () => _dioClient.dio.get(ApiConstants.matchOdds(matchId)),
+      );
       return ApiResult.success(response.data);
     } on DioException catch (exception, stackTrace) {
       return ApiResult.failure(DioErrorMapper.map(exception), stackTrace);
@@ -93,9 +112,18 @@ class MatchApiService {
     }
   }
 
-  Future<ApiResult<dynamic>> fetchMatchH2H(int matchId, int homeTeamId, int awayTeamId) async {
+  Future<ApiResult<dynamic>> fetchMatchH2H(
+    int matchId,
+    int homeTeamId,
+    int awayTeamId,
+  ) async {
     try {
-      final response = await _execute('matchH2H', () => _dioClient.dio.get(ApiConstants.matchH2H(matchId, homeTeamId, awayTeamId)));
+      final response = await _execute(
+        'matchH2H',
+        () => _dioClient.dio.get(
+          ApiConstants.matchH2H(matchId, homeTeamId, awayTeamId),
+        ),
+      );
       return ApiResult.success(response.data);
     } on DioException catch (exception, stackTrace) {
       return ApiResult.failure(DioErrorMapper.map(exception), stackTrace);
@@ -106,7 +134,10 @@ class MatchApiService {
 
   Future<ApiResult<dynamic>> fetchMatchStats(int matchId) async {
     try {
-      final response = await _execute('matchStats', () => _dioClient.dio.get(ApiConstants.matchById(matchId)));
+      final response = await _execute(
+        'matchStats',
+        () => _dioClient.dio.get(ApiConstants.matchById(matchId)),
+      );
       return ApiResult.success(response.data);
     } on DioException catch (exception, stackTrace) {
       return ApiResult.failure(DioErrorMapper.map(exception), stackTrace);
@@ -115,30 +146,47 @@ class MatchApiService {
     }
   }
 
-  Future<Response> _execute(String requestLabel, Future<Response> Function() request) async {
+  Future<Response> _execute(
+    String requestLabel,
+    Future<Response> Function() request,
+  ) async {
     var attempt = 0;
     while (true) {
       attempt += 1;
       try {
-        debugPrint('[MatchApiService] request=$requestLabel attempt=$attempt start');
+        debugPrint(
+          '[MatchApiService] request=$requestLabel attempt=$attempt start',
+        );
         final result = await request().timeout(
           Duration(seconds: AppConfig.receiveTimeout),
         );
-        debugPrint('[MatchApiService] request=$requestLabel attempt=$attempt success');
+        debugPrint(
+          '[MatchApiService] request=$requestLabel attempt=$attempt success',
+        );
         return result;
       } on DioException catch (exception) {
         final statusCode = exception.response?.statusCode;
-        debugPrint('[MatchApiService] request=$requestLabel attempt=$attempt failed status=$statusCode message=${exception.message}');
+        debugPrint(
+          '[MatchApiService] request=$requestLabel attempt=$attempt failed status=$statusCode message=${exception.message}',
+        );
         if (statusCode == 404) {
-          debugPrint('[MatchApiService] request=$requestLabel received 404; not retrying');
+          debugPrint(
+            '[MatchApiService] request=$requestLabel received 404; not retrying',
+          );
           rethrow;
         }
         if (attempt >= AppConfig.retryAttempts) {
-          debugPrint('[MatchApiService] request=$requestLabel reached max attempts=$attempt; rethrowing');
+          debugPrint(
+            '[MatchApiService] request=$requestLabel reached max attempts=$attempt; rethrowing',
+          );
           rethrow;
         }
-        debugPrint('[MatchApiService] request=$requestLabel retrying after ${AppConfig.retryDelayMillis}ms');
-        await Future<void>.delayed(const Duration(milliseconds: AppConfig.retryDelayMillis));
+        debugPrint(
+          '[MatchApiService] request=$requestLabel retrying after ${AppConfig.retryDelayMillis}ms',
+        );
+        await Future<void>.delayed(
+          const Duration(milliseconds: AppConfig.retryDelayMillis),
+        );
       }
     }
   }
@@ -163,7 +211,8 @@ class MatchApiService {
 
     for (final item in items) {
       if (item is! Map<String, dynamic>) continue;
-      final leagueId = item['league_id']?.toString() ?? item['leagueId']?.toString() ?? '';
+      final leagueId =
+          item['league_id']?.toString() ?? item['leagueId']?.toString() ?? '';
       if (leagueId.isEmpty) continue;
 
       final match = MatchResponseModel.fromJson(item);
@@ -171,24 +220,36 @@ class MatchApiService {
       leagueMetadata.putIfAbsent(leagueId, () {
         return {
           'id': leagueId,
-          'leagueName': item['league_name'] as String? ?? item['leagueName'] as String? ?? '',
-          'countryCode': item['country_name'] as String? ?? item['countryCode'] as String? ?? '',
-          'countryFlagUrl': item['country_logo'] as String? ?? item['countryFlagUrl'] as String?,
+          'leagueName':
+              item['league_name'] as String? ??
+              item['leagueName'] as String? ??
+              '',
+          'countryCode':
+              item['country_name'] as String? ??
+              item['countryCode'] as String? ??
+              '',
+          'countryFlagUrl':
+              item['country_logo'] as String? ??
+              item['countryFlagUrl'] as String?,
+          'leagueLogoUrl':
+              item['league_logo'] as String? ?? item['leagueLogo'] as String?,
         };
       });
     }
 
     return leagueGroups.entries.map((entry) {
       final meta = leagueMetadata[entry.key]!;
+      debugPrint(
+        '[API] leagueId=${entry.key} league_logo=${meta['leagueLogoUrl']} country_logo=${meta['countryFlagUrl']}',
+      );
       return LeagueResponseModel(
         id: meta['id'] as String,
         countryCode: meta['countryCode'] as String,
         leagueName: meta['leagueName'] as String,
         countryFlagUrl: meta['countryFlagUrl'] as String?,
+        leagueLogoUrl: meta['leagueLogoUrl'] as String?,
         matches: entry.value,
       );
     }).toList();
   }
-
 }
-
