@@ -31,47 +31,148 @@ class MatchDetailOddsSection extends ConsumerWidget {
       );
     }
 
-    final market = _extractMarket(odds);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const _SectionHeading(title: 'Live Odds'),
-        const SizedBox(height: 16),
-        ...market.entries.map(
-          (entry) => _MarketCard(label: entry.key, value: entry.value),
-        ),
-      ],
+    final grouped = _groupByMarket(odds);
+    final entries = grouped.entries.toList();
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0B1124),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white12),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.35), blurRadius: 12, offset: const Offset(0, 6)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const _SectionHeading(title: ''),
+          const SizedBox(height: 12),
+          ...entries.asMap().entries.map((pair) {
+            final idx = pair.key;
+            final entry = pair.value;
+            final items = entry.value;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 8),
+                  _SectionHeading(title: entry.key),
+                  const SizedBox(height: 8),
+                  _OddsMarketRow(items: items),
+                  if (idx < entries.length - 1) ...[
+                    const SizedBox(height: 12),
+                    Divider(color: Colors.white12, height: 1),
+                    const SizedBox(height: 12),
+                  ],
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
     );
   }
 
-  Map<String, String> _extractMarket(List<dynamic> oddsList) {
-    final market = <String, String>{};
+  Map<String, List<Map<String, String>>> _groupByMarket(List<dynamic> oddsList) {
+    final grouped = <String, List<Map<String, String>>>{};
     for (final raw in oddsList) {
       if (raw is Map<String, dynamic>) {
-        final key =
-            raw['name']?.toString() ?? raw['market']?.toString() ?? 'Market';
-        final home =
-            raw['home']?.toString() ??
-            raw['back_home']?.toString() ??
-            raw['odds_home']?.toString();
-        final draw =
-            raw['draw']?.toString() ??
-            raw['back_draw']?.toString() ??
-            raw['odds_draw']?.toString();
-        final away =
-            raw['away']?.toString() ??
-            raw['back_away']?.toString() ??
-            raw['odds_away']?.toString();
-        if (home != null && away != null) {
-          market[key] = 'H: $home · D: ${draw ?? '-'} · A: $away';
-          if (market.length == 3) break;
+        final market = raw['market']?.toString() ?? raw['name']?.toString() ?? 'Market';
+
+        // Case A: individual selection entries: {market, selection, odd}
+        if (raw.containsKey('selection') && (raw.containsKey('odd') || raw.containsKey('price'))) {
+          final sel = raw['selection']?.toString() ?? '';
+          final odd = raw['odd']?.toString() ?? raw['price']?.toString() ?? '';
+          grouped.putIfAbsent(market, () => []).add({'selection': sel, 'odd': odd});
+          continue;
+        }
+
+        // Case B: combined entry with home/draw/away keys
+        final home = raw['home']?.toString() ?? raw['back_home']?.toString() ?? raw['odds_home']?.toString();
+        final draw = raw['draw']?.toString() ?? raw['back_draw']?.toString() ?? raw['odds_draw']?.toString();
+        final away = raw['away']?.toString() ?? raw['back_away']?.toString() ?? raw['odds_away']?.toString();
+        if (home != null || draw != null || away != null) {
+          final list = <Map<String, String>>[];
+          if (home != null) list.add({'selection': 'Home', 'odd': home});
+          if (draw != null) list.add({'selection': 'Draw', 'odd': draw});
+          if (away != null) list.add({'selection': 'Away', 'odd': away});
+          if (list.isNotEmpty) grouped.putIfAbsent(market, () => []).addAll(list);
+          continue;
+        }
+
+        // Case C: try common fallbacks
+        final selKey = raw.keys.firstWhere((k) => k.toLowerCase().contains('selection') || k.toLowerCase().contains('name'), orElse: () => '');
+        final oddKey = raw.keys.firstWhere((k) => k.toLowerCase().contains('odd') || k.toLowerCase().contains('price') || k.toLowerCase().contains('odds'), orElse: () => '');
+        if (selKey.isNotEmpty && oddKey.isNotEmpty) {
+          final sel = raw[selKey]?.toString() ?? '';
+          final odd = raw[oddKey]?.toString() ?? '';
+          grouped.putIfAbsent(market, () => []).add({'selection': sel, 'odd': odd});
         }
       }
     }
-    if (market.isEmpty) {
-      market['Match Odds'] = 'Unavailable';
+
+    if (grouped.isEmpty) {
+      grouped['Match Odds'] = [ {'selection': 'Unavailable', 'odd': '-'} ];
     }
-    return market;
+    return grouped;
+  }
+
+}
+
+class _OddsMarketRow extends StatelessWidget {
+  const _OddsMarketRow({
+    required this.items,
+  });
+
+  final List<Map<String, String>> items;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final accent = theme.colorScheme.secondary;
+
+    return Row(
+      children: items.map((item) {
+        return Expanded(
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 4),
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFF0B1124),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.white12),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  item['selection'] ?? '',
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  item['odd'] ?? '',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: accent,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
+    );
   }
 }
 
@@ -87,91 +188,6 @@ class _SectionHeading extends StatelessWidget {
             color: Colors.white,
             fontWeight: FontWeight.w700,
           ),
-    );
-  }
-}
-
-class _MarketCard extends StatelessWidget {
-  const _MarketCard({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF111827), Color(0xFF0B1124)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: Colors.white12),
-        boxShadow: [
-          const BoxShadow(
-            color: Color.fromRGBO(68, 138, 255, 0.1),
-            blurRadius: 18,
-            offset: Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  color: const Color.fromRGBO(68, 138, 255, 0.18),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Icon(
-                  Icons.show_chart,
-                  color: Colors.blueAccent,
-                  size: 22,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  label,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                      ),
-                ),
-              ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.white12,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Text(
-                  'Top',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.white70,
-                        fontWeight: FontWeight.w700,
-                      ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Text(
-            value,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.blue[100],
-                ),
-          ),
-        ],
-      ),
     );
   }
 }

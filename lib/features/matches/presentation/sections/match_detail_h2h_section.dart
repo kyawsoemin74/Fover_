@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:fover/features/matches/domain/models/match_h2h_model.dart';
 import 'package:fover/features/matches/providers/match_h2h_provider.dart';
 
 class MatchDetailH2HSection extends ConsumerWidget {
@@ -21,6 +22,8 @@ class MatchDetailH2HSection extends ConsumerWidget {
       homeTeamId: homeTeamId,
       awayTeamId: awayTeamId,
     );
+    // ignore: avoid_print
+    print('WATCH PROVIDER HASH => ${request.hashCode}');
     final state = ref.watch(matchH2HProvider(request));
 
     if (state.status == MatchH2HStatus.loading ||
@@ -44,14 +47,22 @@ class MatchDetailH2HSection extends ConsumerWidget {
       );
     }
 
+    final meetings = h2h.meetings.take(5).toList();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         const _SectionHeading(title: 'Head to Head'),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         _H2HSummaryCard(h2h: h2h),
-        const SizedBox(height: 18),
-        ...h2h.meetings.take(4).map((meeting) => _MeetingCard(meeting: meeting)),
+        const SizedBox(height: 12),
+        ListView.separated(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: meetings.length,
+          separatorBuilder: (context, index) => const Divider(height: 1, color: Colors.white12),
+          itemBuilder: (context, index) => _H2HMatchRow(meeting: meetings[index]),
+        ),
       ],
     );
   }
@@ -60,38 +71,40 @@ class MatchDetailH2HSection extends ConsumerWidget {
 class _H2HSummaryCard extends StatelessWidget {
   const _H2HSummaryCard({required this.h2h});
 
-  final dynamic h2h;
+  final MatchH2HInfo h2h;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF111827), Color(0xFF0F172A)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        border: Border.all(color: Colors.white12),
+        color: const Color(0xFF111827),
+        borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          _SummaryMetric(
-            label: h2h.homeTeamName,
-            value: h2h.homeWins.toString(),
-            accent: const Color(0xFF4F46E5),
+          Expanded(
+            child: _SummaryMetric(
+              label: h2h.homeTeamName,
+              value: '${h2h.homeWins}W',
+              accent: const Color(0xFF22C55E),
+            ),
           ),
-          _SummaryMetric(
-            label: 'Draws',
-            value: h2h.draws.toString(),
-            accent: const Color(0xFF6B7280),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _SummaryMetric(
+              label: 'Draws',
+              value: h2h.draws.toString(),
+              accent: const Color(0xFFF59E0B),
+            ),
           ),
-          _SummaryMetric(
-            label: h2h.awayTeamName,
-            value: h2h.awayWins.toString(),
-            accent: const Color(0xFF2563EB),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _SummaryMetric(
+              label: h2h.awayTeamName,
+              value: '${h2h.awayWins}W',
+              accent: const Color(0xFF3B82F6),
+            ),
           ),
         ],
       ),
@@ -135,97 +148,147 @@ class _SummaryMetric extends StatelessWidget {
   }
 }
 
-class _MeetingCard extends StatelessWidget {
-  const _MeetingCard({required this.meeting});
+class _H2HMatchRow extends StatelessWidget {
+  const _H2HMatchRow({required this.meeting});
 
-  final dynamic meeting;
+  final MatchH2HMeeting meeting;
+
+  String _formatDate(DateTime d) {
+    // Example: 30 Nov 2026
+    const monthShort = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    return '${d.day.toString().padLeft(2, '0')} ${monthShort[d.month - 1]} ${d.year}';
+  }
+
+  String _formatTime(DateTime d) {
+    final hour = d.hour % 12 == 0 ? 12 : d.hour % 12;
+    final minute = d.minute.toString().padLeft(2, '0');
+    final ampm = d.hour >= 12 ? 'PM' : 'AM';
+    return '$hour:$minute $ampm';
+  }
 
   @override
   Widget build(BuildContext context) {
-    final date = meeting.date is DateTime
-        ? meeting.date as DateTime
-        : DateTime.now();
-    final resultText =
-        '${meeting.homeTeam} ${meeting.homeScore} - ${meeting.awayScore} ${meeting.awayTeam}';
-    return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: const Color(0xFF111827),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: Colors.white10),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+    final date = meeting.date;
+    final leftTop = _formatDate(date);
+    final statusShort = meeting.statusShort.toUpperCase();
+    final leftBottom = statusShort == 'NS' || statusShort.isEmpty ? _formatTime(date) : statusShort;
+
+    final finished = statusShort == 'FT' || (meeting.homeScore != 0 || meeting.awayScore != 0) && statusShort != 'NS';
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Text(
-                  resultText,
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                      ),
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white12,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  meeting.status,
+          SizedBox(
+            width: 110,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  leftTop,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Colors.white70,
                         fontWeight: FontWeight.w600,
                       ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Icon(
-                Icons.calendar_today,
-                color: Colors.white24,
-                size: 16,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                '${date.day}/${date.month}/${date.year}',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.white54,
-                    ),
-              ),
-              const SizedBox(width: 12),
-              Icon(
-                Icons.location_on,
-                color: Colors.white24,
-                size: 16,
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  meeting.venue,
+                const SizedBox(height: 4),
+                Text(
+                  leftBottom,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Colors.white54,
                       ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
+          Container(width: 1, height: 44, color: Colors.white12),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        meeting.homeTeam,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    SizedBox(
+                      width: 40,
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: finished
+                            ? Text(
+                                meeting.homeScore.toString(),
+                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                              )
+                            : const SizedBox.shrink(),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        meeting.awayTeam,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Colors.white70,
+                              fontWeight: FontWeight.w600,
+                            ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    SizedBox(
+                      width: 40,
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: finished
+                            ? Text(
+                                meeting.awayScore.toString(),
+                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                              )
+                            : const SizedBox.shrink(),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 15),
         ],
       ),
     );
   }
 }
+
+
+// Last 5 meetings and total-goals widgets removed per design requirements.
 
 class _SectionHeading extends StatelessWidget {
   const _SectionHeading({required this.title});

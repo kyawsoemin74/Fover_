@@ -76,6 +76,16 @@ class MatchDetailRepositoryImpl implements MatchDetailRepository {
     if (data is Map<String, dynamic>) {
       return ApiResult.success(MatchLineupInfo.fromJson(data));
     }
+
+    if (data is List && data.length >= 2) {
+      final home = data[0] as Map<String, dynamic>? ?? {};
+      final away = data[1] as Map<String, dynamic>? ?? {};
+      return ApiResult.success(MatchLineupInfo.fromJson({
+        'home': home,
+        'away': away,
+      }));
+    }
+
     return ApiResult.failure('Unexpected lineup response format.');
   }
 
@@ -103,6 +113,11 @@ class MatchDetailRepositoryImpl implements MatchDetailRepository {
     final data = result.data;
     if (data is Map<String, dynamic>) {
       return ApiResult.success(MatchH2HInfo.fromJson(data));
+    }
+    if (data is List) {
+      return ApiResult.success(
+        MatchH2HInfo.fromApiSportsList(data, homeTeamId, awayTeamId),
+      );
     }
     return ApiResult.failure('Unexpected H2H response format.');
   }

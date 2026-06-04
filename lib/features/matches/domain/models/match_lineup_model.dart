@@ -41,7 +41,7 @@ class MatchTeamLineup {
       teamName: (json['team_name'] ?? json['name'] ?? '')?.toString() ?? '',
       coach: (json['coach'] ?? json['manager'] ?? '')?.toString() ?? '',
       formation: (json['formation'] ?? '')?.toString() ?? '',
-      startingXI: _parsePlayers(json['starting_xi'] ?? json['starting_xi'] ?? json['lineup'] ?? json['starting_lineup']),
+      startingXI: _parsePlayers(json['startXI'] ?? json['starting_xi'] ?? json['lineup'] ?? json['starting_lineup']),
       substitutes: _parsePlayers(json['substitutes'] ?? json['subs'] ?? json['bench']),
     );
   }
@@ -77,6 +77,7 @@ class MatchLineupPlayer {
     required this.position,
     required this.isCaptain,
     required this.photoUrl,
+    required this.grid,
   });
 
   final int? playerId;
@@ -85,17 +86,35 @@ class MatchLineupPlayer {
   final String position;
   final bool isCaptain;
   final String? photoUrl;
+  final String? grid;
 
   factory MatchLineupPlayer.fromJson(Map<String, dynamic> json) {
+    final player = json['player'] as Map<String, dynamic>? ?? json;
     return MatchLineupPlayer(
-      playerId: _toInt(json['player_id'] ?? json['id']),
-      name: (json['player'] ?? json['player_name'] ?? json['name'] ?? '')?.toString() ?? '',
-      number: _toInt(json['number'] ?? json['jersey'] ?? json['shirt_number']),
-      position: (json['position'] ?? json['role'] ?? '')?.toString() ?? '',
-      isCaptain: (json['captain'] ?? json['is_captain'] ?? false) == true,
-      photoUrl: (json['photo'] ?? json['photo_url'] ?? json['image'])?.toString(),
+      playerId: _toInt(player['player_id'] ?? player['playerId'] ?? player['id']),
+      name: (player['player'] ?? player['player_name'] ?? player['name'] ?? '')?.toString() ?? '',
+      number: _parseJersey(player['number'] ?? player['jersey'] ?? player['shirt_number'] ?? player['shirt']),
+      position: (player['pos'] ?? player['position'] ?? player['role'] ?? '')?.toString() ?? '',
+      isCaptain: (player['captain'] ?? player['is_captain'] ?? false) == true,
+      photoUrl: (player['photo'] ?? player['photo_url'] ?? player['image'])?.toString(),
+      grid: (player['grid'] ?? player['grid_position'] ?? player['gridPosition'])?.toString(),
     );
   }
+
+  static int? _parseJersey(dynamic value) {
+    if (value is int) {
+      return _isValidJersey(value) ? value : null;
+    }
+    if (value is String) {
+      final cleaned = value.trim();
+      final normalized = cleaned.startsWith('#') ? cleaned.substring(1).trim() : cleaned;
+      final parsed = int.tryParse(normalized);
+      return _isValidJersey(parsed) ? parsed : null;
+    }
+    return null;
+  }
+
+  static bool _isValidJersey(int? value) => value != null && value > 0 && value <= 99;
 
   const MatchLineupPlayer.empty()
       : playerId = null,
@@ -103,7 +122,8 @@ class MatchLineupPlayer {
         number = null,
         position = '',
         isCaptain = false,
-        photoUrl = null;
+        photoUrl = null,
+        grid = null;
 
   static int? _toInt(dynamic value) {
     if (value is int) return value;

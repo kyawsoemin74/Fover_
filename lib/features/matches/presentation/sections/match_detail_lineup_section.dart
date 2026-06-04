@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fover/features/matches/providers/match_lineup_provider.dart';
@@ -35,23 +36,19 @@ class MatchDetailLineupSection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const _SectionHeading(title: 'Starting XI'),
-        const SizedBox(height: 16),
-        _LineupPitchCard(
-          title: lineup.home.teamName,
-          formation: lineup.home.formation,
-          players: lineup.home.startingXI,
-        ),
-        const SizedBox(height: 14),
-        _LineupPitchCard(
-          title: lineup.away.teamName,
-          formation: lineup.away.formation,
-          players: lineup.away.startingXI,
-          reverse: true,
-        ),
-        const SizedBox(height: 20),
-        const _SectionHeading(title: 'Substitutes'),
+        const _SectionHeading(title: 'Lineups & Formations'),
         const SizedBox(height: 12),
+        _LineupPitchBoard(
+          homeTeamName: lineup.home.teamName,
+          homeFormation: lineup.home.formation,
+          homePlayers: lineup.home.startingXI,
+          awayTeamName: lineup.away.teamName,
+          awayFormation: lineup.away.formation,
+          awayPlayers: lineup.away.startingXI,
+        ),
+        const SizedBox(height: 18),
+        const _SectionHeading(title: 'Substitutes lineup'),
+        const SizedBox(height: 10),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -75,88 +72,295 @@ class MatchDetailLineupSection extends ConsumerWidget {
   }
 }
 
-class _LineupPitchCard extends StatelessWidget {
-  const _LineupPitchCard({
-    required this.title,
-    required this.formation,
-    required this.players,
-    this.reverse = false,
+class _LineupPitchBoard extends StatelessWidget {
+  const _LineupPitchBoard({
+    required this.homeTeamName,
+    required this.homeFormation,
+    required this.homePlayers,
+    required this.awayTeamName,
+    required this.awayFormation,
+    required this.awayPlayers,
   });
 
-  final String title;
-  final String formation;
-  final List<dynamic> players;
-  final bool reverse;
+  final String homeTeamName;
+  final String homeFormation;
+  final List<dynamic> homePlayers;
+  final String awayTeamName;
+  final String awayFormation;
+  final List<dynamic> awayPlayers;
 
-  List<List<dynamic>> get _tiers {
-    final parts = formation.split('-').map(int.tryParse).whereType<int>().toList();
-    if (parts.length < 3 || players.isEmpty) {
+  List<List<dynamic>> _tiers(String formation, List<dynamic> players, {bool reverse = false}) {
+    final parts = formation.split('-').map((part) => int.tryParse(part.trim())).whereType<int>().toList();
+    if (players.isEmpty || parts.isEmpty) {
+      if (kDebugMode) {
+        // ignore: avoid_print
+        print('[MatchLineup][_tiers] empty players or formation parts; formation="$formation" parts=$parts reverse=$reverse');
+      }
       return [players];
     }
+
+    final totalPlayers = players.length;
+    final sumParts = parts.fold<int>(0, (sum, part) => sum + part);
+    final rowCounts = <int>[];
+
+    if (sumParts == totalPlayers) {
+      rowCounts.addAll(parts);
+    } else if (sumParts + 1 == totalPlayers) {
+      rowCounts.add(1);
+      rowCounts.addAll(parts);
+    } else {
+      return [players];
+    }
+
     final tiers = <List<dynamic>>[];
     var index = 0;
-    for (var count in parts.reversed) {
+    for (final count in rowCounts.reversed) {
       final end = (index + count).clamp(0, players.length);
       tiers.add(players.sublist(index, end));
       index = end;
     }
+    if (kDebugMode) {
+      // Log tier sizes and player names per tier for debugging
+      final tierInfo = tiers.map((t) => t.map((p) => (p.name as String?) ?? '<unknown>').toList()).toList();
+      // ignore: avoid_print
+      print('[MatchLineup][_tiers] formation="$formation" parts=$parts rowCounts=$rowCounts reverse=$reverse tiers=$tierInfo');
+    }
     return reverse ? tiers : tiers.reversed.toList();
+  }
+
+  List<Widget> _buildPlayers(List<dynamic> players, String formation, {bool reverse = false}) {
+    final gridRows = _buildGridRows(players, reverse: reverse);
+    if (kDebugMode) {
+      // ignore: avoid_print
+      print('[MatchLineup][_buildPlayers] formation="$formation" players=${players.length} reverse=$reverse gridRows=${gridRows.length}');
+    }
+    if (gridRows.isNotEmpty) {
+      if (kDebugMode) {
+        // ignore: avoid_print
+        print('[MatchLineup][_buildPlayers] using GRID layout for formation="$formation" reverse=$reverse');
+      }
+      return gridRows;
+    }
+
+    final tiers = _tiers(formation, players, reverse: reverse);
+    if (kDebugMode) {
+      // Log the tier composition used for fallback rendering
+      final tierNames = tiers.map((t) => t.map((p) => (p.name as String?) ?? '<unknown>').toList()).toList();
+      // ignore: avoid_print
+      print('[MatchLineup][_buildPlayers] using FALLBACK formation="$formation" reverse=$reverse tiers=$tierNames');
+    }
+    return _buildRows(tiers);
+  }
+
+  List<Widget> _buildRows(List<List<dynamic>> rows) {
+    return rows.map((group) {
+      final players = group.map((player) {
+        final name = player.name as String? ?? '';
+        final number = player.number?.toString();
+        final photoUrl = player.photoUrl as String?;
+        return _PlayerCard(
+          name: name,
+          number: number,
+          photoUrl: photoUrl,
+        );
+      }).toList();
+
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          mainAxisAlignment: group.length == 1 ? MainAxisAlignment.center : MainAxisAlignment.spaceEvenly,
+          children: _buildFormationRowChildren(players),
+        ),
+      );
+    }).toList();
+  }
+
+  List<Widget> _buildFormationRowChildren(List<Widget> players) {
+    if (players.length == 1) {
+      return players;
+    }
+
+    return players.map((player) {
+      return Expanded(
+        child: Align(
+          alignment: Alignment.center,
+          child: player,
+        ),
+      );
+    }).toList();
+  }
+
+  List<Widget> _buildGridRows(List<dynamic> players, {bool reverse = false}) {
+    final rowMap = <int, Map<int, dynamic>>{};
+    var maxColumns = 0;
+    var placed = 0;
+    var minRow = double.maxFinite.toInt();
+    var maxRow = 0;
+
+    for (final player in players) {
+      final gridString = (player.grid as String?) ?? '';
+      final coords = _parseGrid(gridString);
+      if (kDebugMode) {
+        // ignore: avoid_print
+        print('[MatchLineup] player=${player.name} grid="$gridString" parsed=$coords');
+      }
+      if (coords == null) continue;
+
+      final row = coords[0];
+      final col = coords[1];
+      rowMap.putIfAbsent(row, () => {})[col] = player;
+      maxColumns = maxColumns < col ? col : maxColumns;
+      placed += 1;
+      minRow = minRow < row ? minRow : row;
+      maxRow = maxRow > row ? maxRow : row;
+    }
+
+    if (kDebugMode) {
+      // ignore: avoid_print
+      print('[MatchLineup] maxColumns=$maxColumns rowMap=$rowMap coverage=${players.isNotEmpty ? (placed / players.length).toStringAsFixed(2) : '0.00'}');
+    }
+
+    final coverage = players.isNotEmpty ? placed / players.length : 0.0;
+    if (coverage < 0.8 || rowMap.isEmpty) {
+      return const [];
+    }
+
+    final adjustedRowMap = <int, Map<int, dynamic>>{};
+    if (reverse && minRow <= maxRow) {
+      final offset = minRow + maxRow;
+      for (final entry in rowMap.entries) {
+        final invertedRow = offset - entry.key;
+        adjustedRowMap[invertedRow] = entry.value;
+      }
+    } else {
+      adjustedRowMap.addAll(rowMap);
+    }
+
+    final sortedRows = adjustedRowMap.keys.toList()..sort();
+    return sortedRows.map((row) {
+      final columns = adjustedRowMap[row]!;
+      final rowPlayers = columns.entries
+          .toList()
+          ..sort((a, b) => a.key.compareTo(b.key));
+
+      final playersInRow = rowPlayers.map((entry) {
+        final player = entry.value;
+        final name = player.name as String? ?? '';
+        final number = player.number?.toString();
+        final photoUrl = player.photoUrl as String?;
+        return _PlayerCard(
+          name: name,
+          number: number,
+          photoUrl: photoUrl,
+        );
+      }).toList();
+
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          mainAxisAlignment: playersInRow.length == 1
+              ? MainAxisAlignment.center
+              : MainAxisAlignment.spaceEvenly,
+          children: _buildFormationRowChildren(playersInRow),
+        ),
+      );
+    }).toList();
+  }
+
+  List<int>? _parseGrid(String? grid) {
+    if (grid == null || grid.isEmpty) {
+      return null;
+    }
+    final parts = grid.split(':').map((part) => int.tryParse(part.trim())).whereType<int>().toList();
+    if (parts.length != 2) {
+      return null;
+    }
+    return parts;
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: const Color(0xFF111827),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white12),
-      ),
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
-                child: Text(
-                  title,
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      homeTeamName,
+                      style: theme.textTheme.bodyLarge?.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.w700,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      homeFormation.isNotEmpty ? homeFormation : 'TBD',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: Colors.white54,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              Text(
-                formation.isNotEmpty ? formation : 'TBD',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.white54,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      awayTeamName,
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
+                    const SizedBox(height: 4),
+                    Text(
+                      awayFormation.isNotEmpty ? awayFormation : 'TBD',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: Colors.white54,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 10),
           Container(
-            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
             decoration: BoxDecoration(
-              color: const Color(0xFF0E1727),
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: Colors.white10),
+              color: const Color(0xFF0D271A),
+              borderRadius: BorderRadius.circular(16),
             ),
-            child: Column(
-              children: _tiers.map((group) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: group.map((player) {
-                      final name = player.name as String? ?? '';
-                      final number = player.number?.toString() ?? '';
-                      return _PlayerBubble(name: name, number: number);
-                    }).toList(),
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: CustomPaint(
+                    painter: _PitchPainter(),
                   ),
-                );
-              }).toList(),
+                ),
+                Column(
+                  children: [
+                    ..._buildPlayers(homePlayers, homeFormation),
+                    const SizedBox(height: 8),
+                    Container(height: 1, color: Colors.white12),
+                    const SizedBox(height: 8),
+                    ..._buildPlayers(awayPlayers, awayFormation, reverse: true),
+                  ],
+                ),
+              ],
             ),
           ),
         ],
@@ -165,47 +369,112 @@ class _LineupPitchCard extends StatelessWidget {
   }
 }
 
-class _PlayerBubble extends StatelessWidget {
-  const _PlayerBubble({required this.name, required this.number});
+String formatPlayerName(String name) {
+  if (name.isEmpty) return '-';
+  final parts = name.trim().split(RegExp(r'\s+')).where((part) => part.isNotEmpty).toList();
+  if (parts.length <= 1) return name;
+  final firstInitial = parts.first[0].toUpperCase();
+  final lastName = parts.last;
+  return '$firstInitial. $lastName';
+}
 
-  final String name;
-  final String number;
+class _PlayerAvatar extends StatelessWidget {
+  const _PlayerAvatar({
+    required this.photoUrl,
+  });
+
+  final String? photoUrl;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 52,
-      height: 52,
-      margin: const EdgeInsets.symmetric(horizontal: 4),
-      decoration: BoxDecoration(
-        color: const Color(0xFF16203A),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white12),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            number,
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                ),
+    return CircleAvatar(
+      radius: 22,
+      backgroundColor: const Color(0xFF0F172A),
+      backgroundImage: photoUrl?.isNotEmpty == true ? NetworkImage(photoUrl!) : null,
+    );
+  }
+}
+
+class _PlayerName extends StatelessWidget {
+  const _PlayerName({required this.name});
+
+  final String name;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      formatPlayerName(name),
+      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Colors.white70,
+            fontWeight: FontWeight.w600,
           ),
-          const SizedBox(height: 4),
+      textAlign: TextAlign.center,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+    );
+  }
+}
+
+class _PlayerCard extends StatelessWidget {
+  const _PlayerCard({
+    required this.name,
+    this.number,
+    this.photoUrl,
+  });
+
+  final String name;
+  final String? number;
+  final String? photoUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasNumber = number?.isNotEmpty == true;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _PlayerAvatar(photoUrl: photoUrl),
+        if (hasNumber) ...[
+          const SizedBox(height: 6),
           Text(
-            name.isNotEmpty ? name.split(' ').last : '-',
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+            number!.trim(),
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.white60,
+                  color: Colors.white70,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
                 ),
           ),
         ],
-      ),
+        const SizedBox(height: 4),
+        _PlayerName(name: name),
+      ],
     );
   }
+}
+
+class _PitchPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white12
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+
+    final rect = Offset.zero & size;
+    canvas.drawRect(rect, paint);
+
+    final center = Offset(size.width / 2, size.height / 2);
+    canvas.drawLine(Offset(size.width / 2, 0), Offset(size.width / 2, size.height), paint);
+    canvas.drawCircle(center, size.width * 0.08, paint);
+
+    final boxWidth = size.width * 0.24;
+    final boxHeight = size.height * 0.16;
+    final left = (size.width - boxWidth) / 2;
+    canvas.drawRect(Rect.fromLTWH(left, 0, boxWidth, boxHeight), paint);
+    canvas.drawRect(Rect.fromLTWH(left, size.height - boxHeight, boxWidth, boxHeight), paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 class _SubstituteList extends StatelessWidget {
@@ -221,7 +490,6 @@ class _SubstituteList extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF111827),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white12),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -234,19 +502,30 @@ class _SubstituteList extends StatelessWidget {
                 ),
           ),
           const SizedBox(height: 12),
-          ...players.map((player) {
-            final name = player.name as String? ?? '';
-            final number = player.number?.toString() ?? '';
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Text(
-                '$number ${name.isNotEmpty ? name : 'Unknown'}',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.white54,
-                    ),
-              ),
-            );
-          }),
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: players.map((player) {
+              final name = player.name as String? ?? '';
+              final number = player.number?.toString();
+              final photoUrl = player.photoUrl as String?;
+              return SizedBox(
+                width: 120,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0D1F2E),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: _PlayerCard(
+                    name: name,
+                    number: number,
+                    photoUrl: photoUrl,
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
         ],
       ),
     );

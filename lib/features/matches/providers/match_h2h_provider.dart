@@ -13,6 +13,18 @@ class MatchH2HRequest {
   final int matchId;
   final int homeTeamId;
   final int awayTeamId;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is MatchH2HRequest &&
+          runtimeType == other.runtimeType &&
+          matchId == other.matchId &&
+          homeTeamId == other.homeTeamId &&
+          awayTeamId == other.awayTeamId;
+
+  @override
+  int get hashCode => Object.hash(matchId, homeTeamId, awayTeamId);
 }
 
 enum MatchH2HStatus { initial, loading, loaded, error }
@@ -48,6 +60,9 @@ class MatchH2HNotifier extends StateNotifier<MatchH2HState> {
   final MatchH2HRequest _request;
 
   Future<void> loadH2H() async {
+    // Debug: provider key identity check
+    // ignore: avoid_print
+    print('LOAD PROVIDER HASH => ${_request.hashCode}');
     if (state.status == MatchH2HStatus.loading) return;
 
     state = state.copyWith(status: MatchH2HStatus.loading, errorMessage: null);
