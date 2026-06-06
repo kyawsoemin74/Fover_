@@ -11,6 +11,7 @@ class MatchResponseModel {
     required this.score,
     required this.kickOffTime,
     required this.status,
+    required this.elapsed,
     this.redCardsA = 0,
     this.redCardsB = 0,
     this.yellowCardsA = 0,
@@ -27,6 +28,7 @@ class MatchResponseModel {
   final String score;
   final String kickOffTime;
   final String status;
+  final int elapsed;
   final int redCardsA;
   final int redCardsB;
   final int yellowCardsA;
@@ -49,6 +51,7 @@ class MatchResponseModel {
       score: json['score'] as String? ?? json['result'] as String? ?? '$homeScore - $awayScore',
       kickOffTime: localTime,
       status: json['status'] as String? ?? json['matchStatus'] as String? ?? 'UPCOMING',
+      elapsed: json['elapsed'] as int? ?? int.tryParse(json['elapsed']?.toString() ?? '') ?? 0,
       redCardsA: json['redCardsA'] as int? ?? 0,
       redCardsB: json['redCardsB'] as int? ?? 0,
       yellowCardsA: json['yellowCardsA'] as int? ?? 0,
@@ -68,6 +71,7 @@ class MatchResponseModel {
       score: score,
       kickOffTime: kickOffTime,
       status: status,
+      elapsed: elapsed,
       redCardsA: redCardsA,
       redCardsB: redCardsB,
       yellowCardsA: yellowCardsA,

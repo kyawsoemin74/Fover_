@@ -13,15 +13,13 @@ final homeRepositoryProvider = Provider<HomeRepository>((ref) {
   return HomeRepositoryImpl(dioClient: DioClient(dio: ref.watch(dioProvider)));
 });
 
-final homeProvider = StateNotifierProvider<HomeNotifier, HomeState>((ref) {
+final homeProvider = StateNotifierProvider.autoDispose<HomeNotifier, HomeState>((ref) {
   final repository = ref.watch(homeRepositoryProvider);
   return HomeNotifier(repository);
 });
 
 class HomeNotifier extends StateNotifier<HomeState> {
-  HomeNotifier(this._repository) : super(HomeState(status: HomeStatus.loading)) {
-    loadMatches();
-  }
+  HomeNotifier(this._repository) : super(HomeState(status: HomeStatus.loading));
 
   final HomeRepository _repository;
   Timer? _liveRefreshTimer;

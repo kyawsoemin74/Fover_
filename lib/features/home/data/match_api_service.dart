@@ -9,6 +9,7 @@ import 'package:fover/core/network/dio_error_mapper.dart';
 import 'package:fover/features/home/data/models/league_response_model.dart';
 import 'package:fover/features/home/data/models/match_response_model.dart';
 import 'package:fover/features/matches/data/models/match_detail_response_model.dart';
+import 'package:fover/features/standings/data/models/standing_response_model.dart';
 
 class MatchApiService {
   MatchApiService(this._dioClient);
@@ -139,6 +140,33 @@ class MatchApiService {
         () => _dioClient.dio.get(ApiConstants.matchById(matchId)),
       );
       return ApiResult.success(response.data);
+    } on DioException catch (exception, stackTrace) {
+      return ApiResult.failure(DioErrorMapper.map(exception), stackTrace);
+    } catch (error, stackTrace) {
+      return ApiResult.failure(error.toString(), stackTrace);
+    }
+  }
+
+  Future<ApiResult<List<StandingResponseModel>>> fetchStandings(
+    int leagueId,
+    String season,
+  ) async {
+    try {
+      final response = await _execute(
+        'standings',
+        () => _dioClient.dio.get(ApiConstants.standings(leagueId, season)),
+      );
+      final payload = response.data;
+
+      if (payload is List) {
+        final standings = payload
+            .whereType<Map<String, dynamic>>()
+            .map(StandingResponseModel.fromJson)
+            .toList();
+        return ApiResult.success(standings);
+      }
+
+      return ApiResult.failure('Unexpected standings response format.');
     } on DioException catch (exception, stackTrace) {
       return ApiResult.failure(DioErrorMapper.map(exception), stackTrace);
     } catch (error, stackTrace) {

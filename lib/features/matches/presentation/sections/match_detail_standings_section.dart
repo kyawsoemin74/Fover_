@@ -1,22 +1,31 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fover/features/matches/domain/models/match_detail_model.dart';
+import 'package:fover/features/standings/domain/league_standing_rules.dart';
+import 'package:fover/features/standings/domain/models/standing_model.dart';
+import 'package:fover/features/standings/providers/standing_provider.dart';
 
-class MatchDetailStandingsSection extends StatelessWidget {
+class MatchDetailStandingsSection extends ConsumerWidget {
   const MatchDetailStandingsSection({super.key, required this.detail});
 
   final MatchDetailInfo detail;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final season = _resolveSeason(detail);
+    final request = StandingRequest(leagueId: detail.leagueId, season: season);
+    final standingsAsync = ref.watch(standingsProvider(request));
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
           'League Standings',
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.w700,
-              ),
+            color: Colors.white,
+            fontWeight: FontWeight.w700,
+          ),
         ),
         const SizedBox(height: 16),
         Container(
@@ -26,203 +35,201 @@ class MatchDetailStandingsSection extends StatelessWidget {
             border: Border.all(color: Colors.white12),
           ),
           padding: const EdgeInsets.all(18),
-          child: Column(
-            children: [
-              Row(
-                children: const [
-                  Expanded(
-                    child: Text(
-                      'Team',
-                      style: TextStyle(
-                        color: Colors.white54,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  SizedBox(
-                    width: 38,
-                    child: Text(
-                      'P',
-                      style: TextStyle(
-                        color: Colors.white54,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      textAlign: TextAlign.right,
-                    ),
-                  ),
-                  SizedBox(width: 14),
-                  SizedBox(
-                    width: 38,
-                    child: Text(
-                      'GD',
-                      style: TextStyle(
-                        color: Colors.white54,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      textAlign: TextAlign.right,
-                    ),
-                  ),
-                  SizedBox(width: 14),
-                  SizedBox(
-                    width: 38,
-                    child: Text(
-                      'Pts',
-                      style: TextStyle(
-                        color: Colors.white54,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      textAlign: TextAlign.right,
-                    ),
-                  ),
-                ],
+          child: standingsAsync.when(
+            loading: () => const Center(
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 24),
+                child: CircularProgressIndicator(),
               ),
-              const SizedBox(height: 18),
-              _StandingsRow(
-                rank: 1,
-                team: detail.homeTeam,
-                points: 43,
-                goalDifference: 24,
-                highlight: true,
-                badge: 'W',
-              ),
-              const SizedBox(height: 10),
-              _StandingsRow(
-                rank: 2,
-                team: detail.awayTeam,
-                points: 40,
-                goalDifference: 18,
-                badge: 'S',
-              ),
-              const SizedBox(height: 10),
-              _StandingsRow(
-                rank: 3,
-                team: 'Rival FC',
-                points: 37,
-                goalDifference: 12,
-                badge: 'P',
-              ),
-              const SizedBox(height: 10),
-              _StandingsRow(
-                rank: 4,
-                team: 'Challenger United',
-                points: 36,
-                goalDifference: 10,
-                badge: 'R',
-              ),
-            ],
+            ),
+            error: (error, _) => _buildErrorState(context, ref, error.toString(), request),
+            data: (standings) => _buildStandingsTable(context, standings),
           ),
         ),
       ],
     );
   }
+
+  Widget _buildErrorState(
+    BuildContext context,
+    WidgetRef ref,
+    String message,
+    StandingRequest request,
+  ) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Unable to load standings',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              message,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Colors.white70,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton(
+              onPressed: () => ref.invalidate(standingsProvider(request)),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStandingsTable(BuildContext context, List<StandingInfo> standings) {
+    if (standings.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 24),
+          child: Text('No standings available for this league.', style: TextStyle(color: Colors.white70)),
+        ),
+      );
+    }
+
+    bool isCurrentMatchTeam(StandingInfo standing) {
+      return standing.teamId == detail.homeTeamId || standing.teamId == detail.awayTeamId;
+    }
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minWidth: 640),
+        child: DataTable(
+          headingTextStyle: const TextStyle(color: Colors.white54, fontWeight: FontWeight.w600),
+          dataTextStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500),
+          columnSpacing: 12,
+          horizontalMargin: 0,
+          dividerThickness: 0.5,
+          columns: const [
+            DataColumn(label: Text('Pos')),
+            DataColumn(label: Text('Team')),
+            DataColumn(label: Text('P')),
+            DataColumn(label: Text('W')),
+            DataColumn(label: Text('D')),
+            DataColumn(label: Text('L')),
+            DataColumn(label: Text('+/-')),
+            DataColumn(label: Text('GD')),
+            DataColumn(label: Text('Pts')),
+          ],
+          rows: standings.map((standing) {
+            final rule = LeagueStandingRules.resolve(detail.leagueId, standing.position);
+            final isHighlighted = isCurrentMatchTeam(standing);
+
+            return DataRow(
+              color: WidgetStateProperty.resolveWith<Color?>((states) {
+                if (isHighlighted) {
+                  return const Color(0xFF172554).withAlpha(180);
+                }
+                return null;
+              }),
+              cells: [
+                DataCell(
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (rule != null)
+                        Container(
+                          width: 4,
+                          height: 28,
+                          margin: const EdgeInsets.only(right: 8),
+                          decoration: BoxDecoration(
+                            color: rule.color,
+                            borderRadius: BorderRadius.circular(99),
+                          ),
+                        ),
+                      Text('${standing.position}'),
+                    ],
+                  ),
+                ),
+                DataCell(_TeamCell(standing: standing, isHighlighted: isHighlighted)),
+                DataCell(Text('${standing.played}')),
+                DataCell(Text('${standing.won}')),
+                DataCell(Text('${standing.drawn}')),
+                DataCell(Text('${standing.lost}')),
+                DataCell(Text('${standing.goalsFor}-${standing.goalsAgainst}')),
+                DataCell(Text(_formatGoalDifference(standing.goalDifference))),
+                DataCell(Text('${standing.points}')),
+              ],
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+
+  String _formatGoalDifference(int value) {
+    if (value > 0) {
+      return '+$value';
+    }
+    return value.toString();
+  }
+
+  String _resolveSeason(MatchDetailInfo detail) {
+    if (detail.season.trim().isNotEmpty) {
+      return detail.season;
+    }
+
+    final parsed = detail.createdAt != null
+        ? DateTime.tryParse(detail.createdAt!)
+        : null;
+
+    return (parsed?.year ?? DateTime.now().year).toString();
+  }
 }
 
-class _StandingsRow extends StatelessWidget {
-  const _StandingsRow({
-    required this.rank,
-    required this.team,
-    required this.points,
-    required this.goalDifference,
-    this.highlight = false,
-    this.badge,
-  });
+class _TeamCell extends StatelessWidget {
+  const _TeamCell({required this.standing, required this.isHighlighted});
 
-  final int rank;
-  final String team;
-  final int points;
-  final int goalDifference;
-  final bool highlight;
-  final String? badge;
-
-  Color get _rowColor {
-    if (highlight) return const Color(0xFF111B30);
-    return const Color(0xFF0A1120);
-  }
+  final StandingInfo standing;
+  final bool isHighlighted;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
-        color: _rowColor,
-        borderRadius: BorderRadius.circular(18),
+        color: isHighlighted ? const Color(0xFF1E293B) : Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        border: isHighlighted ? Border.all(color: const Color(0xFF3B82F6).withAlpha(120)) : null,
       ),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          SizedBox(
-            width: 24,
-            child: Text(
-              '$rank',
-              style: TextStyle(
-                color: highlight ? Colors.white : Colors.white70,
-                fontWeight: FontWeight.w700,
-              ),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: SizedBox(
+            width: 28,
+            height: 28,
+            child: CachedNetworkImage(
+              imageUrl: standing.teamLogo ?? '',
+              fit: BoxFit.cover,
+              placeholder: (context, url) => const SizedBox.shrink(),
+              errorWidget: (context, url, error) => const Icon(Icons.sports_soccer, size: 18, color: Colors.white54),
             ),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Row(
-              children: [
-                if (badge != null) ...[
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: badge == 'W'
-                          ? const Color(0xFF059669)
-                          : badge == 'R'
-                              ? const Color(0xFFDC2626)
-                              : const Color(0xFF2563EB),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      badge!,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                ],
-                Expanded(
-                  child: Text(
-                    team,
-                    style: TextStyle(
-                      color: highlight ? Colors.white : Colors.white70,
-                      fontWeight: highlight ? FontWeight.w700 : FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+        ),
+        const SizedBox(width: 10),
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 180),
+          child: Text(
+            standing.teamName,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
           ),
-          SizedBox(
-            width: 38,
-            child: Text(
-              '$goalDifference',
-              style: TextStyle(
-                color: highlight ? Colors.white : Colors.white54,
-              ),
-              textAlign: TextAlign.right,
-            ),
-          ),
-          const SizedBox(width: 14),
-          SizedBox(
-            width: 38,
-            child: Text(
-              '$points',
-              style: TextStyle(
-                color: highlight ? Colors.white : Colors.white70,
-                fontWeight: FontWeight.w700,
-              ),
-              textAlign: TextAlign.right,
-            ),
-          ),
-        ],
+        ),
+      ],
       ),
     );
   }

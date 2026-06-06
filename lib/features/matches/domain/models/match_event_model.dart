@@ -58,9 +58,9 @@ class MatchEventInfo {
     // minute/extra parsing: support strings like "45+3'", nested time objects, and separate extra fields
     final minuteSource = json['elapsed'] ?? json['minute'] ?? json['time'] ?? json['time_elapsed'] ?? json['timeElapsed'];
     final extraSource = json['extra'] ?? json['extra_minute'] ?? json['injury_time'] ?? json['time_extra'] ?? json['timeExtra'];
-    final _minuteParse = _parseMinute(minuteSource, extraSource);
-    final minute = _minuteParse.item1;
-    final extraMinute = _minuteParse.item2;
+    final minuteParse = _parseMinute(minuteSource, extraSource);
+    final minute = minuteParse.item1;
+    final extraMinute = minuteParse.item2;
 
     final teamId = _toInt(json['team_id'] ?? json['teamId'] ?? json['team']?['id']);
     final teamName = (json['team_name'] ?? json['team_name'] ?? json['team']?['name'] ?? json['team']?.toString())?.toString() ?? '';

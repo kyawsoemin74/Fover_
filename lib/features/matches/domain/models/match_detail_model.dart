@@ -2,6 +2,7 @@ class MatchDetailInfo {
   const MatchDetailInfo({
     required this.matchId,
     required this.leagueId,
+    required this.season,
     required this.leagueName,
     required this.leagueLogo,
     required this.countryName,
@@ -25,6 +26,7 @@ class MatchDetailInfo {
 
   final int matchId;
   final int leagueId;
+  final String season;
   final String leagueName;
   final String leagueLogo;
   final String countryName;

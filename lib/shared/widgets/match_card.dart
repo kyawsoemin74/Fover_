@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:fover/features/home/domain/models/match_model.dart';
 
 class MatchCard extends StatelessWidget {
   const MatchCard({
@@ -9,6 +10,7 @@ class MatchCard extends StatelessWidget {
     required this.score,
     required this.kickOffTime,
     required this.status,
+    this.elapsed = 0,
     this.redCardsA = 0,
     this.redCardsB = 0,
     this.yellowCardsA = 0,
@@ -23,6 +25,7 @@ class MatchCard extends StatelessWidget {
   final String score;
   final String kickOffTime;
   final String status;
+  final int elapsed;
   final int redCardsA;
   final int redCardsB;
   final int yellowCardsA;
@@ -34,11 +37,19 @@ class MatchCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final normalizedStatus = status.toUpperCase();
+    final normalizedStatus = status.toUpperCase().trim();
     final isNS = normalizedStatus == 'NS' || normalizedStatus == 'UPCOMING' || normalizedStatus == 'SCHEDULED';
     final showScore = !isNS && score.isNotEmpty;
     final scoreParts = _parseScore(score);
-    final statusLine = _buildStatusLine(status);
+    final statusLine = _buildStatusLine(status, elapsed);
+    final isLongStatusLabel = const <String>{'CANC', 'PST', 'ABD', 'SUSP', 'INT'}.contains(normalizedStatus);
+    final isLiveMinute = MatchInfo.isLiveStatus(status) && statusLine.isNotEmpty;
+    final statusColor = isLiveMinute
+        ? const Color(0xFF00C853)
+        : isLongStatusLabel
+            ? theme.colorScheme.error
+            : theme.colorScheme.onSurfaceVariant;
+    final statusFontSize = isLongStatusLabel ? 11.5 : 13.0;
     final teamBLine = teamB;
 
     return Material(
@@ -71,9 +82,12 @@ class MatchCard extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         statusLine,
+                        maxLines: 1,
+                        softWrap: false,
+                        overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.bodySmall?.copyWith(
-                          fontSize: 13,
-                          color: theme.colorScheme.onSurfaceVariant,
+                          fontSize: statusFontSize,
+                          color: statusColor,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -155,46 +169,16 @@ class MatchCard extends StatelessWidget {
     );
   }
 
-  String _buildStatusLine(String status) {
+  String _buildStatusLine(String status, int elapsed) {
     final normalized = status.toUpperCase();
+
     if (normalized == 'NS' || normalized == 'UPCOMING' || normalized == 'SCHEDULED') {
       return '';
     }
 
-    if (normalized == 'HT') {
-      return 'HT';
-    }
-
-    if (normalized == 'FT') {
-      return 'FT';
-    }
-
-    if (_isLiveStatus(normalized)) {
-      final formattedMinute = _formatLiveMinute(status);
-      return formattedMinute;
-    }
-
-    return '';
+    return MatchInfo.displayStatus(status, elapsed: elapsed);
   }
 
-  bool _isLiveStatus(String normalizedStatus) {
-    return normalizedStatus.contains('LIVE') || normalizedStatus.contains('1H') || normalizedStatus.contains('2H');
-  }
-
-  String _formatLiveMinute(String status) {
-    final match = RegExp(r"(\d{1,3})(?:\s*\+\s*(\d{1,2}))?\s*'?", caseSensitive: false).firstMatch(status);
-    if (match == null) {
-      return '';
-    }
-
-    final base = match.group(1);
-    final extra = match.group(2);
-    if (base == null || base.isEmpty) {
-      return '';
-    }
-
-    return extra != null && extra.isNotEmpty ? '$base+${extra}\'' : '$base\'';
-  }
 
   List<String> _parseScore(String value) {
     final parts = value.split(RegExp(r'\s*[-:]\s*'));

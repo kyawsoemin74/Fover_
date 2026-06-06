@@ -5,6 +5,7 @@ class MatchDetailResponseModel {
   MatchDetailResponseModel({
     required this.matchId,
     required this.leagueId,
+    required this.season,
     required this.leagueName,
     required this.leagueLogo,
     required this.countryName,
@@ -28,6 +29,7 @@ class MatchDetailResponseModel {
 
   final int matchId;
   final int leagueId;
+  final String season;
   final String leagueName;
   final String leagueLogo;
   final String countryName;
@@ -53,6 +55,7 @@ class MatchDetailResponseModel {
     return MatchDetailResponseModel(
       matchId: json['match_id'] as int? ?? int.tryParse(json['match_id']?.toString() ?? '') ?? 0,
       leagueId: json['league_id'] as int? ?? int.tryParse(json['league_id']?.toString() ?? '') ?? 0,
+      season: _parseSeason(json),
       leagueName: json['league_name'] as String? ?? '',
       leagueLogo: json['league_logo'] as String? ?? '',
       countryName: json['country_name'] as String? ?? '',
@@ -79,6 +82,7 @@ class MatchDetailResponseModel {
     return MatchDetailInfo(
       matchId: matchId,
       leagueId: leagueId,
+      season: season,
       leagueName: leagueName,
       leagueLogo: leagueLogo,
       countryName: countryName,
@@ -99,6 +103,14 @@ class MatchDetailResponseModel {
       createdAt: createdAt,
       updatedAt: updatedAt,
     );
+  }
+
+  static String _parseSeason(Map<String, dynamic> json) {
+    return json['season']?.toString() ??
+        json['season_name']?.toString() ??
+        json['competition_season']?.toString() ??
+        json['league_season']?.toString() ??
+        '';
   }
 
   static String _formatLocalTime(String rawTime) {

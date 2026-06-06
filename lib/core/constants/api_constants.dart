@@ -8,6 +8,9 @@ class ApiConstants {
   static String matchOdds(int matchId) => '/api/matches/$matchId/odds';
   static String matchH2H(int matchId, int homeTeamId, int awayTeamId) => '/api/matches/h2h/$matchId/$homeTeamId/$awayTeamId';
 
+  static String standings(int leagueId, String season) =>
+      '/api/leagues/$leagueId/standing/$season';
+
   static String teamById(int teamId) => '/api/teams/$teamId';
 
   static const news = '/api/news';

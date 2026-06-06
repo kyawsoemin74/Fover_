@@ -41,7 +41,7 @@ class MatchDetailOddsSection extends ConsumerWidget {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.white12),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.35), blurRadius: 12, offset: const Offset(0, 6)),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.35), blurRadius: 12, offset: const Offset(0, 6)),
         ],
       ),
       child: Column(

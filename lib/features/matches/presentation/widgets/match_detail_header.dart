@@ -164,7 +164,7 @@ class _ScoreDisplay extends StatelessWidget {
               : isHalfTime
                   ? 'HT'
                   : isLive
-                      ? (elapsed > 0 ? "${elapsed}'" : matchTime)
+                      ? (elapsed > 0 ? '$elapsed\'' : matchTime)
                       : matchTime,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
             color: Colors.white70,

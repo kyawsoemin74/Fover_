@@ -8,6 +8,7 @@ class MatchInfo {
     required this.score,
     required this.kickOffTime,
     required this.status,
+    this.elapsed = 0,
     this.redCardsA = 0,
     this.redCardsB = 0,
     this.yellowCardsA = 0,
@@ -24,6 +25,7 @@ class MatchInfo {
   final String score;
   final String kickOffTime;
   final String status;
+  final int elapsed;
   final int redCardsA;
   final int redCardsB;
   final int yellowCardsA;
@@ -45,6 +47,7 @@ class MatchInfo {
       score: scoreValue,
       kickOffTime: json['kickOffTime'] as String? ?? json['time'] as String? ?? json['match_time'] as String? ?? '',
       status: json['status'] as String? ?? json['matchStatus'] as String? ?? 'UPCOMING',
+      elapsed: json['elapsed'] as int? ?? int.tryParse(json['elapsed']?.toString() ?? '') ?? 0,
       redCardsA: json['redCardsA'] as int? ?? 0,
       redCardsB: json['redCardsB'] as int? ?? 0,
       yellowCardsA: json['yellowCardsA'] as int? ?? 0,
@@ -64,6 +67,7 @@ class MatchInfo {
       'score': score,
       'kickOffTime': kickOffTime,
       'status': status,
+      'elapsed': elapsed,
       'redCardsA': redCardsA,
       'redCardsB': redCardsB,
       'yellowCardsA': yellowCardsA,
@@ -71,6 +75,63 @@ class MatchInfo {
       'teamALogoUrl': teamALogoUrl,
       'teamBLogoUrl': teamBLogoUrl,
     };
+  }
+
+  static const Set<String> _finishedStatuses = {
+    'PEN',
+    'FT',
+    'AET',
+    'FT_PEN',
+    'CANC',
+    'PST',
+    'ABD',
+    'SUSP',
+    'INT',
+    'AWD',
+    'WO',
+  };
+
+  static const Map<String, String> _statusLabels = {
+    'AET': 'FT',
+    'FT_PEN': 'PEN',
+    'CANC': 'Cancelled',
+    'PST': 'Postponed',
+    'ABD': 'Abandoned',
+    'SUSP': 'Suspended',
+    'INT': 'Interrupted',
+  };
+
+  static bool isFinishedStatus(String status) {
+    return _finishedStatuses.contains(status.toUpperCase().trim());
+  }
+
+  static bool isLiveStatus(String status) {
+    final normalizedStatus = status.toUpperCase().trim();
+
+    if (normalizedStatus.isEmpty || isFinishedStatus(normalizedStatus)) {
+      return false;
+    }
+
+    return normalizedStatus.startsWith('1H') ||
+        normalizedStatus.startsWith('HT') ||
+        normalizedStatus.startsWith('2H') ||
+        normalizedStatus.startsWith('ET') ||
+        normalizedStatus.startsWith('BT') ||
+        normalizedStatus == 'P';
+  }
+
+  static String displayStatus(String status, {int elapsed = 0}) {
+    final normalizedStatus = status.toUpperCase().trim();
+
+    if (isFinishedStatus(normalizedStatus)) {
+      return _statusLabels[normalizedStatus] ?? normalizedStatus;
+    }
+
+    if (isLiveStatus(normalizedStatus)) {
+      return elapsed > 0 ? '$elapsed\'' : normalizedStatus;
+    }
+
+    return '';
   }
 
   static int _parseId(dynamic value) {

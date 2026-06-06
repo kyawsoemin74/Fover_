@@ -38,6 +38,8 @@ class LeagueCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final liveMatches = matches.where((match) => MatchInfo.isLiveStatus(match.status)).length;
+    final totalMatches = matchCount > 0 ? matchCount : matches.length;
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 6),
@@ -55,70 +57,48 @@ class LeagueCard extends StatelessWidget {
                 onTap: onToggle,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
+                    horizontal: 8,
+                    vertical: 4,
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.primary.withValues(
-                            alpha: 0.14,
-                          ),
-                          shape: BoxShape.circle,
-                        ),
-                        child: ClipOval(
-                          child: Builder(
-                            builder: (context) {
-                              final code = CountryFlagHelper.extractCountryCode(
+                      SizedBox(
+                        width: 26,
+                        height: 26,
+                        child: Builder(
+                          builder: (context) {
+                            final code = CountryFlagHelper.extractCountryCode(
+                              countryFlagUrl,
+                            );
+
+                            if (code != null && code.isNotEmpty) {
+                              return CountryFlagHelper.buildCountryFlag(
                                 countryFlagUrl,
+                                size: 26,
                               );
+                            }
 
-                              if (code != null && code.isNotEmpty) {
-                                return Center(
-                                  child: CountryFlagHelper.buildCountryFlag(
-                                    countryFlagUrl,
-                                    size: 20,
-                                  ),
-                                );
-                              }
-
-                              if (leagueLogoUrl != null &&
-                                  leagueLogoUrl!.isNotEmpty) {
-                                return CachedNetworkImage(
-                                  imageUrl: leagueLogoUrl!,
-                                  fit: BoxFit.cover,
-                                  width: 36,
-                                  height: 36,
-                                  placeholder: (_, __) => Center(
-                                    child: SizedBox(
-                                      width: 14,
-                                      height: 14,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.primary,
-                                      ),
-                                    ),
-                                  ),
-                                  errorWidget: (_, __, ___) => Center(
-                                    child: Icon(
-                                      Icons.emoji_events,
-                                      size: 18,
+                            if (leagueLogoUrl != null &&
+                                leagueLogoUrl!.isNotEmpty) {
+                              return CachedNetworkImage(
+                                imageUrl: leagueLogoUrl!,
+                                fit: BoxFit.cover,
+                                width: 26,
+                                height: 26,
+                                placeholder: (_, _) => Center(
+                                  child: SizedBox(
+                                    width: 12,
+                                    height: 12,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
                                       color: Theme.of(
                                         context,
-                                      ).colorScheme.onSurfaceVariant,
+                                      ).colorScheme.primary,
                                     ),
                                   ),
-                                );
-                              }
-
-                              return Center(
-                                child: Icon(
+                                ),
+                                errorWidget: (_, _, _) => Icon(
                                   Icons.emoji_events,
                                   size: 18,
                                   color: Theme.of(
@@ -126,46 +106,76 @@ class LeagueCard extends StatelessWidget {
                                   ).colorScheme.onSurfaceVariant,
                                 ),
                               );
-                            },
-                          ),
+                            }
+
+                            return Icon(
+                              Icons.emoji_events,
+                              size: 18,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
+                            );
+                          },
                         ),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
                           _leagueLabel,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w800,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      const SizedBox(width: 10),
-                      Container(
-                        width: 26,
-                        height: 26,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.onSurface.withValues(
-                            alpha: 0.08,
-                          ),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          '$matchCount',
-                          style: theme.textTheme.labelLarge?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: theme.colorScheme.onSurface,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
+                      const SizedBox(width: 6),
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(minWidth: 0, maxWidth: 80),
+                        child: liveMatches > 0
+                            ? Text.rich(
+                                TextSpan(
+                                  children: [
+                                    TextSpan(
+                                      text: '$liveMatches',
+                                      style: const TextStyle(
+                                        color: Color(0xFF00C853),
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    TextSpan(
+                                      text: '/$totalMatches',
+                                      style: theme.textTheme.bodyMedium?.copyWith(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                        color: theme.colorScheme.onSurface,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.right,
+                              )
+                            : Text(
+                                '$totalMatches',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: theme.colorScheme.onSurface,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.right,
+                              ),
                       ),
-                      const SizedBox(width: 10),
+                      const SizedBox(width: 6),
                       Icon(
                         expanded ? Icons.expand_less : Icons.expand_more,
                         color: theme.colorScheme.onSurfaceVariant,
-                        size: 20,
+                        size: 18,
                       ),
                     ],
                   ),
@@ -183,6 +193,7 @@ class LeagueCard extends StatelessWidget {
                       score: match.score,
                       kickOffTime: match.kickOffTime,
                       status: match.status,
+                      elapsed: match.elapsed,
                       redCardsA: match.redCardsA,
                       redCardsB: match.redCardsB,
                       yellowCardsA: match.yellowCardsA,

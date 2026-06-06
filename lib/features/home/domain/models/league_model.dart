@@ -15,6 +15,9 @@ class LeagueInfo {
   final String countryCode;
   final String leagueName;
   final List<MatchInfo> matches;
+
+  int get liveMatches => matches.where((match) => MatchInfo.isLiveStatus(match.status)).length;
+  int get totalMatches => matches.length;
   final String? countryFlagUrl;
   final String? leagueLogoUrl;
 

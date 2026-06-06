@@ -10,12 +10,14 @@ class HomeTopSection extends ConsumerWidget {
     this.onCalendar,
     this.onSearch,
     this.onMenu,
+    this.pageController,
   });
 
   final VoidCallback? onNotifications;
   final VoidCallback? onCalendar;
   final VoidCallback? onSearch;
   final VoidCallback? onMenu;
+  final PageController? pageController;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -90,7 +92,7 @@ class HomeTopSection extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 4),
-            const HomeDateTabs(),
+            HomeDateTabs(pageController: pageController),
           ],
         ),
       ),
@@ -99,7 +101,9 @@ class HomeTopSection extends ConsumerWidget {
 }
 
 class HomeDateTabs extends ConsumerStatefulWidget {
-  const HomeDateTabs({super.key});
+  const HomeDateTabs({super.key, this.pageController});
+
+  final PageController? pageController;
 
   @override
   ConsumerState<HomeDateTabs> createState() => _HomeDateTabsState();
@@ -152,7 +156,17 @@ class _HomeDateTabsState extends ConsumerState<HomeDateTabs> {
                 child: _DateTabItem(
                   date: visibleDates[i],
                   isSelected: DateUtils.isSameDay(visibleDates[i], selectedDate),
-                  onTap: () => homeNotifier.selectDate(visibleDates[i]),
+                  onTap: () {
+                    homeNotifier.selectDate(visibleDates[i]);
+                    final targetIndex = dates.indexWhere((date) => DateUtils.isSameDay(date, visibleDates[i]));
+                    if (widget.pageController != null && targetIndex >= 0) {
+                      widget.pageController!.animateToPage(
+                        targetIndex,
+                        duration: const Duration(milliseconds: 260),
+                        curve: Curves.easeOutCubic,
+                      );
+                    }
+                  },
                 ),
               ),
               if (i < visibleDates.length - 1)

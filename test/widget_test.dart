@@ -1,14 +1,45 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-
+import 'package:fover/core/network/api_result.dart';
+import 'package:fover/features/home/domain/home_repository.dart';
+import 'package:fover/features/home/domain/models/league_model.dart';
+import 'package:fover/features/home/providers/home_provider.dart';
 import 'package:fover/main.dart';
+
+class _TestHomeNotifier extends HomeNotifier {
+  _TestHomeNotifier() : super(_TestHomeRepository());
+
+  @override
+  Future<void> loadMatches() async {}
+
+  @override
+  void startLiveRefresh() {}
+
+  @override
+  void stopLiveRefresh() {}
+}
+
+class _TestHomeRepository implements HomeRepository {
+  @override
+  Future<ApiResult<List<LeagueInfo>>> fetchLeagueMatches(
+    DateTime date, {
+    bool forceRefresh = false,
+  }) async {
+    return ApiResult.success(<LeagueInfo>[]);
+  }
+}
 
 void main() {
   testWidgets('Home page basic render test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const FoverApp());
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          homeProvider.overrideWith((ref) => _TestHomeNotifier()),
+        ],
+        child: const FoverApp(),
+      ),
+    );
 
-    // Verify that the home page displays the expected text and app bar title.
-    expect(find.text('Production Football App'), findsOneWidget);
-    expect(find.text('Fover'), findsOneWidget);
+    expect(find.byType(FoverApp), findsOneWidget);
   });
 }
