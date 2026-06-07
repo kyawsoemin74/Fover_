@@ -60,9 +60,6 @@ class MatchH2HNotifier extends StateNotifier<MatchH2HState> {
   final MatchH2HRequest _request;
 
   Future<void> loadH2H() async {
-    // Debug: provider key identity check
-    // ignore: avoid_print
-    print('LOAD PROVIDER HASH => ${_request.hashCode}');
     if (state.status == MatchH2HStatus.loading) return;
 
     state = state.copyWith(status: MatchH2HStatus.loading, errorMessage: null);

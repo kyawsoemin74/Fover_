@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fover/features/matches/providers/match_lineup_provider.dart';
@@ -92,10 +91,6 @@ class _LineupPitchBoard extends StatelessWidget {
   List<List<dynamic>> _tiers(String formation, List<dynamic> players, {bool reverse = false}) {
     final parts = formation.split('-').map((part) => int.tryParse(part.trim())).whereType<int>().toList();
     if (players.isEmpty || parts.isEmpty) {
-      if (kDebugMode) {
-        // ignore: avoid_print
-        print('[MatchLineup][_tiers] empty players or formation parts; formation="$formation" parts=$parts reverse=$reverse');
-      }
       return [players];
     }
 
@@ -119,36 +114,16 @@ class _LineupPitchBoard extends StatelessWidget {
       tiers.add(players.sublist(index, end));
       index = end;
     }
-    if (kDebugMode) {
-      // Log tier sizes and player names per tier for debugging
-      final tierInfo = tiers.map((t) => t.map((p) => (p.name as String?) ?? '<unknown>').toList()).toList();
-      // ignore: avoid_print
-      print('[MatchLineup][_tiers] formation="$formation" parts=$parts rowCounts=$rowCounts reverse=$reverse tiers=$tierInfo');
-    }
     return reverse ? tiers : tiers.reversed.toList();
   }
 
   List<Widget> _buildPlayers(List<dynamic> players, String formation, {bool reverse = false}) {
     final gridRows = _buildGridRows(players, reverse: reverse);
-    if (kDebugMode) {
-      // ignore: avoid_print
-      print('[MatchLineup][_buildPlayers] formation="$formation" players=${players.length} reverse=$reverse gridRows=${gridRows.length}');
-    }
     if (gridRows.isNotEmpty) {
-      if (kDebugMode) {
-        // ignore: avoid_print
-        print('[MatchLineup][_buildPlayers] using GRID layout for formation="$formation" reverse=$reverse');
-      }
       return gridRows;
     }
 
     final tiers = _tiers(formation, players, reverse: reverse);
-    if (kDebugMode) {
-      // Log the tier composition used for fallback rendering
-      final tierNames = tiers.map((t) => t.map((p) => (p.name as String?) ?? '<unknown>').toList()).toList();
-      // ignore: avoid_print
-      print('[MatchLineup][_buildPlayers] using FALLBACK formation="$formation" reverse=$reverse tiers=$tierNames');
-    }
     return _buildRows(tiers);
   }
 
@@ -200,10 +175,6 @@ class _LineupPitchBoard extends StatelessWidget {
     for (final player in players) {
       final gridString = (player.grid as String?) ?? '';
       final coords = _parseGrid(gridString);
-      if (kDebugMode) {
-        // ignore: avoid_print
-        print('[MatchLineup] player=${player.name} grid="$gridString" parsed=$coords');
-      }
       if (coords == null) continue;
 
       final row = coords[0];
@@ -213,11 +184,6 @@ class _LineupPitchBoard extends StatelessWidget {
       placed += 1;
       minRow = minRow < row ? minRow : row;
       maxRow = maxRow > row ? maxRow : row;
-    }
-
-    if (kDebugMode) {
-      // ignore: avoid_print
-      print('[MatchLineup] maxColumns=$maxColumns rowMap=$rowMap coverage=${players.isNotEmpty ? (placed / players.length).toStringAsFixed(2) : '0.00'}');
     }
 
     final coverage = players.isNotEmpty ? placed / players.length : 0.0;

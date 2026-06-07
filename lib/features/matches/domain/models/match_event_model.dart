@@ -1,5 +1,3 @@
-import 'package:flutter/foundation.dart';
-
 enum MatchEventType {
   goal,
   ownGoal,
@@ -161,7 +159,6 @@ MatchEventType _parseType(String rawType, String detail) {
   if (normalized.contains('half time') || normalized.contains('ht')) return MatchEventType.halftime;
   if (normalized.contains('full time') || normalized.contains('ft')) return MatchEventType.fulltime;
   if (normalized.contains('goal')) return MatchEventType.goal;
-  debugPrint('[MatchEventInfo] unknown event type rawType="$rawType" detail="$detail" normalized="$normalized"');
   return MatchEventType.unknown;
 }
 

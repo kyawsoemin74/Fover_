@@ -1,5 +1,4 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:fover/core/config/app_config.dart';
 import 'package:fover/core/constants/api_constants.dart';
@@ -182,36 +181,18 @@ class MatchApiService {
     while (true) {
       attempt += 1;
       try {
-        debugPrint(
-          '[MatchApiService] request=$requestLabel attempt=$attempt start',
-        );
         final result = await request().timeout(
           Duration(seconds: AppConfig.receiveTimeout),
-        );
-        debugPrint(
-          '[MatchApiService] request=$requestLabel attempt=$attempt success',
         );
         return result;
       } on DioException catch (exception) {
         final statusCode = exception.response?.statusCode;
-        debugPrint(
-          '[MatchApiService] request=$requestLabel attempt=$attempt failed status=$statusCode message=${exception.message}',
-        );
         if (statusCode == 404) {
-          debugPrint(
-            '[MatchApiService] request=$requestLabel received 404; not retrying',
-          );
           rethrow;
         }
         if (attempt >= AppConfig.retryAttempts) {
-          debugPrint(
-            '[MatchApiService] request=$requestLabel reached max attempts=$attempt; rethrowing',
-          );
           rethrow;
         }
-        debugPrint(
-          '[MatchApiService] request=$requestLabel retrying after ${AppConfig.retryDelayMillis}ms',
-        );
         await Future<void>.delayed(
           const Duration(milliseconds: AppConfig.retryDelayMillis),
         );
@@ -267,9 +248,6 @@ class MatchApiService {
 
     return leagueGroups.entries.map((entry) {
       final meta = leagueMetadata[entry.key]!;
-      debugPrint(
-        '[API] leagueId=${entry.key} league_logo=${meta['leagueLogoUrl']} country_logo=${meta['countryFlagUrl']}',
-      );
       return LeagueResponseModel(
         id: meta['id'] as String,
         countryCode: meta['countryCode'] as String,

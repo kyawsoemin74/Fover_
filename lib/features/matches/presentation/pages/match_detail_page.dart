@@ -67,13 +67,11 @@ class _MatchDetailPageState extends ConsumerState<MatchDetailPage> {
 
   void _loadInitialTabData() {
     if (widget.matchId <= 0) return;
-    debugPrint('[MatchDetailPage] initial load matchId=${widget.matchId} tab=details');
     ref.read(matchEventsProvider(widget.matchId).notifier).loadEvents();
   }
 
   void _onTabSelected(MatchDetailTab tab) {
     if (_selectedTab == tab) return;
-    debugPrint('[MatchDetailPage] tab selected=$tab matchId=${widget.matchId}');
     setState(() {
       _selectedTab = tab;
     });

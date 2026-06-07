@@ -347,7 +347,6 @@ class _FotMobRow extends StatelessWidget {
       final fallback = _parseSubstitution(event);
       final inLabel = inName?.isNotEmpty == true ? inName : (fallback[0].isNotEmpty ? fallback[0] : null);
       final outLabel = outName?.isNotEmpty == true ? outName : (fallback[1].isNotEmpty ? fallback[1] : null);
-      debugPrint('[MatchTimeline][subst] type=${event.type} detail="${event.detail}" playerName="${event.playerName}" assistName="${event.assistName}" in="$inLabel" out="$outLabel" rawKeys=${event.raw.keys.toList()}');
 
       if (inLabel == null && outLabel == null) {
         final fallbackText = event.detail.isNotEmpty ? event.detail : (event.playerName.isNotEmpty ? event.playerName : 'Substitution');

@@ -32,21 +32,6 @@ class MatchDetailRepositoryImpl implements MatchDetailRepository {
     }
 
     final data = result.data;
-    // Debug: print raw events payload to aid API validation during development
-    try {
-      // ignore: avoid_print
-      if (data != null) {
-        // Only print in debug builds
-        // Using dart:developer or print behind kDebugMode avoids noisy logs in prod
-        // Print a small sample to help map fields (first event or keys)
-        // ignore: avoid_print
-        // conditional to reduce output
-        // ignore: avoid_dynamic_calls
-        // We deliberately keep this minimal; remove after validating API.
-        // ignore: avoid_print
-        print('[MatchDetailRepository] raw events payload type=${data.runtimeType}');
-      }
-    } catch (_) {}
     if (data is List) {
       return ApiResult.success(data
           .whereType<Map<String, dynamic>>()

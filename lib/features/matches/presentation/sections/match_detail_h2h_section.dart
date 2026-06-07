@@ -22,8 +22,6 @@ class MatchDetailH2HSection extends ConsumerWidget {
       homeTeamId: homeTeamId,
       awayTeamId: awayTeamId,
     );
-    // ignore: avoid_print
-    print('WATCH PROVIDER HASH => ${request.hashCode}');
     final state = ref.watch(matchH2HProvider(request));
 
     if (state.status == MatchH2HStatus.loading ||

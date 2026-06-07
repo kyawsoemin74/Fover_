@@ -13,7 +13,7 @@ final homeRepositoryProvider = Provider<HomeRepository>((ref) {
   return HomeRepositoryImpl(dioClient: DioClient(dio: ref.watch(dioProvider)));
 });
 
-final homeProvider = StateNotifierProvider.autoDispose<HomeNotifier, HomeState>((ref) {
+final homeProvider = StateNotifierProvider<HomeNotifier, HomeState>((ref) {
   final repository = ref.watch(homeRepositoryProvider);
   return HomeNotifier(repository);
 });
@@ -30,7 +30,6 @@ class HomeNotifier extends StateNotifier<HomeState> {
   }
 
   Future<void> refresh() async {
-    debugPrint('Requesting manual refresh');
     await _loadMatchesForDate(state.selectedDate, forceRefresh: true);
   }
 
@@ -61,12 +60,10 @@ class HomeNotifier extends StateNotifier<HomeState> {
 
   Future<void> _loadMatchesForDate(DateTime date, {bool forceRefresh = false, bool periodic = false}) async {
     if (_isRefreshing) {
-      debugPrint('Refresh skipped: already running');
       return;
     }
 
     _isRefreshing = true;
-    debugPrint('Home refresh started');
     try {
       if (!periodic) {
         state = state.copyWith(status: HomeStatus.loading, errorMessage: null);
@@ -80,7 +77,6 @@ class HomeNotifier extends StateNotifier<HomeState> {
       }
     } finally {
       _isRefreshing = false;
-      debugPrint('Home refresh completed');
     }
   }
 
@@ -102,7 +98,6 @@ class HomeNotifier extends StateNotifier<HomeState> {
 
   Future<void> _refreshLiveMatches() async {
     if (_isRefreshing) {
-      debugPrint('Live refresh skipped: already running');
       return;
     }
 

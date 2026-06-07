@@ -1,5 +1,4 @@
 import 'package:hive/hive.dart';
-import 'package:flutter/foundation.dart';
 import 'package:fover/core/constants/app_constants.dart';
 import 'package:fover/core/network/api_result.dart';
 import 'package:fover/core/network/dio_client.dart';
@@ -47,15 +46,6 @@ class NewsRepositoryImpl implements NewsRepository {
       'payload': payloadToStore,
     });
 
-    if (news.isNotEmpty) {
-      // debug log saved cache image urls
-      for (final item in payloadToStore) {
-        final id = item['id']?.toString() ?? '(no-id)';
-        final img = item['image_url'] ?? item['imageUrl'] ?? item['thumbnail'];
-        // ignore: avoid_print
-        print('[NewsRepo] cached id=$id image=$img');
-      }
-    }
     return ApiResult.success(news);
   }
 
@@ -72,14 +62,6 @@ class NewsRepositoryImpl implements NewsRepository {
       if (cachedDate != null && !_isExpired(cachedDate)) {
         final payload = cached['payload'];
         if (payload is List) {
-          if (kDebugMode) {
-            for (final item in payload.whereType<Map<String, dynamic>>()) {
-              final id = item['id']?.toString() ?? '(no-id)';
-              final img = item['image_url'] ?? item['imageUrl'] ?? item['thumbnail'];
-              // ignore: avoid_print
-              print('[NewsRepo] read cached id=$id image=$img');
-            }
-          }
           return payload
               .whereType<Map<String, dynamic>>()
               .map((item) => NewsInfo.fromJson(item))

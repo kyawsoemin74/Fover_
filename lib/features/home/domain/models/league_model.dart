@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:fover/features/home/domain/models/match_model.dart';
 
 class LeagueInfo {
@@ -25,9 +24,6 @@ class LeagueInfo {
     final leagueLogoUrl =
         json['leagueLogoUrl'] as String? ?? json['league_logo'] as String?;
     final countryFlagUrl = json['countryFlagUrl'] as String?;
-    debugPrint(
-      '[DOMAIN] leagueLogoUrl=$leagueLogoUrl countryFlagUrl=$countryFlagUrl id=${json['id'] ?? json['leagueId']}',
-    );
 
     return LeagueInfo(
       id: json['id'] as String? ?? json['leagueId'] as String? ?? '',
