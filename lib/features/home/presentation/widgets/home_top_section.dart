@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:fover/features/auth/providers/auth_provider.dart';
 import 'package:fover/features/home/providers/date_selection_provider.dart';
 import 'package:fover/features/home/providers/home_provider.dart';
 import 'package:fover/shared/widgets/profile_action_button.dart';
@@ -19,6 +20,8 @@ class HomeTopSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final authState = ref.watch(authProvider);
+    final avatarUrl = authState.user?.avatarUrl;
 
     return Material(
       color: theme.colorScheme.surface,
@@ -80,9 +83,19 @@ class HomeTopSection extends ConsumerWidget {
                 ),
                 const SizedBox(width: 4),
                 ProfileActionButton(
-                  icon: Icons.person_outline,
+                  icon: avatarUrl?.isNotEmpty == true
+                      ? null
+                      : Icons.person_outline,
                   tooltip: 'Profile',
                   onTap: onProfile,
+                  child: avatarUrl?.isNotEmpty == true
+                      ? CircleAvatar(
+                          radius: 16,
+                          backgroundImage: NetworkImage(avatarUrl!),
+                          backgroundColor:
+                              theme.colorScheme.surfaceContainerHighest,
+                        )
+                      : null,
                 ),
               ],
             ),
@@ -131,11 +144,17 @@ class _HomeDateTabsState extends ConsumerState<HomeDateTabs> {
   @override
   Widget build(BuildContext context) {
     final dates = ref.watch(dateRangeProvider);
-    final selectedDate = ref.watch(homeProvider.select((state) => state.selectedDate));
+    final selectedDate = ref.watch(
+      homeProvider.select((state) => state.selectedDate),
+    );
     final homeNotifier = ref.read(homeProvider.notifier);
 
-    final selectedIndex = dates.indexWhere((d) => DateUtils.isSameDay(d, selectedDate));
-    final visibleDates = selectedIndex != -1 ? _visibleDates(dates, selectedIndex) : dates;
+    final selectedIndex = dates.indexWhere(
+      (d) => DateUtils.isSameDay(d, selectedDate),
+    );
+    final visibleDates = selectedIndex != -1
+        ? _visibleDates(dates, selectedIndex)
+        : dates;
 
     return SizedBox(
       height: _barHeight,
@@ -148,7 +167,10 @@ class _HomeDateTabsState extends ConsumerState<HomeDateTabs> {
               Expanded(
                 child: _DateTabItem(
                   date: visibleDates[i],
-                  isSelected: DateUtils.isSameDay(visibleDates[i], selectedDate),
+                  isSelected: DateUtils.isSameDay(
+                    visibleDates[i],
+                    selectedDate,
+                  ),
                   onTap: () {
                     homeNotifier.selectDate(visibleDates[i]);
                   },
@@ -186,7 +208,20 @@ class _DateTabItem extends StatelessWidget {
     }
 
     String getMonthName(DateTime d) {
-      const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+      const months = [
+        'JAN',
+        'FEB',
+        'MAR',
+        'APR',
+        'MAY',
+        'JUN',
+        'JUL',
+        'AUG',
+        'SEP',
+        'OCT',
+        'NOV',
+        'DEC',
+      ];
       return months[d.month - 1];
     }
 
@@ -204,7 +239,9 @@ class _DateTabItem extends StatelessWidget {
             curve: Curves.easeOutCubic,
             padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 6),
             decoration: BoxDecoration(
-              color: isSelected ? theme.colorScheme.primary.withAlpha(180) : theme.colorScheme.surfaceContainerHighest,
+              color: isSelected
+                  ? theme.colorScheme.primary.withAlpha(180)
+                  : theme.colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
                 color: isSelected
@@ -222,7 +259,9 @@ class _DateTabItem extends StatelessWidget {
                   style: theme.textTheme.labelSmall?.copyWith(
                     fontSize: 10,
                     fontWeight: FontWeight.w800,
-                    color: isSelected ? theme.colorScheme.onPrimary : theme.colorScheme.onSurface,
+                    color: isSelected
+                        ? theme.colorScheme.onPrimary
+                        : theme.colorScheme.onSurface,
                     letterSpacing: 0.15,
                   ),
                   maxLines: 1,
@@ -249,7 +288,9 @@ class _DateTabItem extends StatelessWidget {
                   width: isSelected ? 28 : 16,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(6),
-                    color: isSelected ? theme.colorScheme.onPrimary : theme.colorScheme.surface,
+                    color: isSelected
+                        ? theme.colorScheme.onPrimary
+                        : theme.colorScheme.surface,
                   ),
                 ),
               ],
@@ -275,12 +316,18 @@ class HomeTopHeaderDelegate extends SliverPersistentHeaderDelegate {
   final double maxExtent;
 
   @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
     return SizedBox.expand(child: child);
   }
 
   @override
   bool shouldRebuild(covariant HomeTopHeaderDelegate oldDelegate) {
-    return oldDelegate.child != child || oldDelegate.maxExtent != maxExtent || oldDelegate.minExtent != minExtent;
+    return oldDelegate.child != child ||
+        oldDelegate.maxExtent != maxExtent ||
+        oldDelegate.minExtent != minExtent;
   }
 }

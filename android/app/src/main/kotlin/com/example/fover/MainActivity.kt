@@ -1,4 +1,4 @@
-package com.example.fover
+package com.fover.app
 
 import io.flutter.embedding.android.FlutterActivity
 

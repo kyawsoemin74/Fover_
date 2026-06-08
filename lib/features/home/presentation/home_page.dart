@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:go_router/go_router.dart';
+import 'package:fover/features/auth/data/auth_api_service.dart';
+import 'package:fover/features/auth/providers/auth_provider.dart';
 import 'package:fover/features/favorites/providers/favorites_provider.dart';
 import 'package:fover/features/home/providers/home_provider.dart';
 import 'package:fover/features/home/providers/home_state.dart';
@@ -14,14 +17,13 @@ import 'package:fover/shared/widgets/league_card.dart';
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
 
-  
-
   @override
   ConsumerState<HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends ConsumerState<HomePage> {
   late final HomeNotifier _homeNotifier;
+  bool _isSigningIn = false;
 
   @override
   void initState() {
@@ -84,10 +86,14 @@ class _HomePageState extends ConsumerState<HomePage> {
                   const HomeLoadingSkeleton()
                 else if (homeState.status == HomeStatus.error)
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 24),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 0,
+                      vertical: 24,
+                    ),
                     child: EmptyState(
                       title: 'Unable to load matches',
-                      message: homeState.errorMessage ??
+                      message:
+                          homeState.errorMessage ??
                           'Please check your connection and try again.',
                       actionLabel: 'Retry',
                       onAction: homeNotifier.retry,
@@ -95,17 +101,23 @@ class _HomePageState extends ConsumerState<HomePage> {
                   )
                 else if (homeState.status == HomeStatus.empty)
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 24),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 0,
+                      vertical: 24,
+                    ),
                     child: EmptyState(
                       title: 'No Matches',
-                      message: 'No matches were found for the selected date. Try another day or pull to refresh.',
+                      message:
+                          'No matches were found for the selected date. Try another day or pull to refresh.',
                       actionLabel: 'Refresh',
                       onAction: homeNotifier.retry,
                     ),
                   )
                 else
                   ...homeState.leagues.map((league) {
-                    final expanded = homeState.expandedLeagueIds.contains(league.id);
+                    final expanded = homeState.expandedLeagueIds.contains(
+                      league.id,
+                    );
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 8),
                       child: LeagueCard(
@@ -115,7 +127,8 @@ class _HomePageState extends ConsumerState<HomePage> {
                         leagueName: league.leagueName,
                         matchCount: league.matches.length,
                         expanded: expanded,
-                        onToggle: () => homeNotifier.toggleLeagueExpanded(league.id),
+                        onToggle: () =>
+                            homeNotifier.toggleLeagueExpanded(league.id),
                         matches: league.matches,
                         onMatchTap: (match) => context.pushNamed(
                           'matchDetail',
@@ -134,6 +147,53 @@ class _HomePageState extends ConsumerState<HomePage> {
         ),
       ],
     );
+  }
+
+  Future<void> _signInWithGoogle(BuildContext sheetContext) async {
+    if (_isSigningIn) return;
+
+    setState(() => _isSigningIn = true);
+
+    try {
+      final account = await GoogleSignIn.instance.authenticate();
+      final authData = account.authentication;
+      final idToken = authData.idToken;
+      if (idToken == null || idToken.isEmpty) {
+        throw const FormatException(
+          'Google sign-in did not return an id token.',
+        );
+      }
+
+      final response = await ref
+          .read(authApiServiceProvider)
+          .signInWithGoogle(idToken);
+      await ref
+          .read(authProvider.notifier)
+          .saveSession(
+            response.user,
+            response.accessToken,
+            refreshToken: response.refreshToken,
+          );
+
+      if (!mounted) return;
+      Navigator.of(sheetContext).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Signed in with Google successfully.')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            error is Exception ? error.toString() : 'Google sign-in failed.',
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSigningIn = false);
+      }
+    }
   }
 
   void _showProfileSheet(BuildContext context) {
@@ -181,9 +241,19 @@ class _HomePageState extends ConsumerState<HomePage> {
               SizedBox(
                 width: double.infinity,
                 child: FilledButton.icon(
-                  onPressed: () => Navigator.of(sheetContext).pop(),
-                  icon: const Icon(Icons.login_rounded),
-                  label: const Text('Continue with Google'),
+                  onPressed: _isSigningIn
+                      ? null
+                      : () => _signInWithGoogle(sheetContext),
+                  icon: _isSigningIn
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.login_rounded),
+                  label: Text(
+                    _isSigningIn ? 'Signing in…' : 'Continue with Google',
+                  ),
                 ),
               ),
             ],

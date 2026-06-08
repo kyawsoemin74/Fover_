@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "1080534072165",
+    "project_id": "fover-7162e",
+    "storage_bucket": "fover-7162e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1080534072165:android:26e698830cc7ad39de3f8c",
+        "android_client_info": {
+          "package_name": "com.fover.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1080534072165-3i86t3q2ga0rdtg5k790u4f34ksk76fg.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.fover.app",
+            "certificate_hash": "e5608f183c55183d2f3cfdb1155d3df9b3adb7ee"
+          }
+        },
+        {
+          "client_id": "1080534072165-709kvvjk4c8cinkce9lfpufufk6038lu.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA65GbSRwhvfVaJ1jCLaTIv-jzPpZzh29s"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1080534072165-709kvvjk4c8cinkce9lfpufufk6038lu.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1080534072165-70080npindu45g1cjic1rmgap2e2n8nn.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.footballXtLatest"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -8,11 +8,7 @@ const String _authUserKey = 'fover_auth_user';
 const String _authAccessTokenKey = 'fover_auth_access_token';
 const String _authRefreshTokenKey = 'fover_auth_refresh_token';
 
-enum AuthStatus {
-  unknown,
-  authenticated,
-  unauthenticated,
-}
+enum AuthStatus { unknown, authenticated, unauthenticated }
 
 class AuthSession {
   const AuthSession({
@@ -40,8 +36,12 @@ class AuthSession {
   factory AuthSession.fromJson(Map<String, dynamic> json) {
     return AuthSession(
       user: AuthUser.fromJson(Map<String, dynamic>.from(json['user'] ?? {})),
-      accessToken: json['accessToken']?.toString() ?? '',
-      refreshToken: json['refreshToken']?.toString(),
+      accessToken:
+          json['access_token']?.toString() ??
+          json['accessToken']?.toString() ??
+          '',
+      refreshToken:
+          json['refresh_token']?.toString() ?? json['refreshToken']?.toString(),
     );
   }
 
@@ -93,7 +93,8 @@ abstract class AuthStorage {
 }
 
 class SecureAuthStorage implements AuthStorage {
-  SecureAuthStorage({FlutterSecureStorage? storage}) : _storage = storage ?? const FlutterSecureStorage();
+  SecureAuthStorage({FlutterSecureStorage? storage})
+    : _storage = storage ?? const FlutterSecureStorage();
 
   final FlutterSecureStorage _storage;
 
@@ -142,7 +143,8 @@ class SecureAuthStorage implements AuthStorage {
 }
 
 class AuthNotifier extends StateNotifier<AuthState> {
-  AuthNotifier(this._storage) : super(const AuthState(status: AuthStatus.unknown));
+  AuthNotifier(this._storage)
+    : super(const AuthState(status: AuthStatus.unknown));
 
   final AuthStorage _storage;
 

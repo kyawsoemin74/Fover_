@@ -18,7 +18,8 @@ class AuthUser {
       id: json['id']?.toString() ?? '',
       email: json['email']?.toString() ?? '',
       name: json['name']?.toString(),
-      avatarUrl: json['avatarUrl']?.toString(),
+      avatarUrl:
+          json['avatar_url']?.toString() ?? json['avatarUrl']?.toString(),
       provider: json['provider']?.toString() ?? 'local',
     );
   }

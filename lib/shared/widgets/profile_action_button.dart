@@ -3,14 +3,16 @@ import 'package:flutter/material.dart';
 class ProfileActionButton extends StatelessWidget {
   const ProfileActionButton({
     super.key,
-    required this.icon,
+    this.icon,
+    this.child,
     required this.tooltip,
     this.onTap,
     this.iconSize = 20,
     this.size = 36,
   });
 
-  final IconData icon;
+  final IconData? icon;
+  final Widget? child;
   final String tooltip;
   final VoidCallback? onTap;
   final double iconSize;
@@ -25,7 +27,7 @@ class ProfileActionButton extends StatelessWidget {
       shape: const CircleBorder(),
       child: IconButton(
         onPressed: onTap,
-        icon: Icon(icon, size: iconSize),
+        icon: child ?? Icon(icon ?? Icons.person_outline, size: iconSize),
         tooltip: tooltip,
         splashRadius: 20,
         padding: EdgeInsets.zero,

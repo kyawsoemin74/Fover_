@@ -23,10 +23,7 @@ class _FakeAuthStorage implements AuthStorage {
 
     return AuthSession.fromJson(
       Map<String, dynamic>.from(jsonDecode(userJson) as Map<String, dynamic>),
-    ).copyWith(
-      accessToken: token,
-      refreshToken: values['auth_refresh_token'],
-    );
+    ).copyWith(accessToken: token, refreshToken: values['auth_refresh_token']);
   }
 
   @override
@@ -54,6 +51,27 @@ void main() {
     expect(notifier.debugState.status, AuthStatus.authenticated);
     expect(notifier.debugState.user?.email, 'test@example.com');
     expect(notifier.debugState.accessToken, 'access-token');
+  });
+
+  test('parses backend snake_case auth payload into session state', () {
+    final session = AuthSession.fromJson({
+      'access_token': 'backend-token',
+      'refresh_token': 'refresh-token',
+      'user': {
+        'id': '42',
+        'email': 'google@example.com',
+        'name': 'Google User',
+        'avatar_url': 'https://example.com/avatar.png',
+        'provider': 'google',
+      },
+    });
+
+    expect(session.accessToken, 'backend-token');
+    expect(session.refreshToken, 'refresh-token');
+    expect(session.user.id, '42');
+    expect(session.user.email, 'google@example.com');
+    expect(session.user.avatarUrl, 'https://example.com/avatar.png');
+    expect(session.user.provider, 'google');
   });
 
   test('signOut clears the session and resets state', () async {
