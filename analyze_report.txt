@@ -1,0 +1,35 @@
+Analyzing fover...
+
+  error - lib\features\leagues\domain\models\league_section_model.dart:14:14 - The name 'LeagueSummaryModel' isn't a type, so it can't be used as a type argument. Try correcting the name to an existing type, or defining a type named 'LeagueSummaryModel'. - non_type_as_type_argument
+  error - lib\features\leagues\domain\models\league_section_model.dart:22:50 - The method 'fromJson' isn't defined for the type 'Function'. Try correcting the name to the name of an existing method, or defining a method named 'fromJson'. - undefined_method
+  error - lib\features\leagues\domain\models\league_section_model.dart:39:3 - Can't have modifier 'const' here. Try removing 'const'. - extraneous_modifier
+  error - lib\features\leagues\domain\models\league_section_model.dart:40:5 - Field formal parameters can only be used in a constructor. Try removing 'this.'. - field_initializer_outside_constructor
+  error - lib\features\leagues\domain\models\league_section_model.dart:41:5 - Field formal parameters can only be used in a constructor. Try removing 'this.'. - field_initializer_outside_constructor
+  error - lib\features\leagues\domain\models\league_section_model.dart:42:5 - Field formal parameters can only be used in a constructor. Try removing 'this.'. - field_initializer_outside_constructor
+  error - lib\features\leagues\domain\models\league_section_model.dart:43:5 - Field formal parameters can only be used in a constructor. Try removing 'this.'. - field_initializer_outside_constructor
+  error - lib\features\leagues\domain\models\league_section_model.dart:44:5 - Field formal parameters can only be used in a constructor. Try removing 'this.'. - field_initializer_outside_constructor
+  error - lib\features\leagues\domain\models\league_section_model.dart:45:5 - Field formal parameters can only be used in a constructor. Try removing 'this.'. - field_initializer_outside_constructor
+  error - lib\features\leagues\domain\models\league_section_model.dart:46:5 - Field formal parameters can only be used in a constructor. Try removing 'this.'. - field_initializer_outside_constructor
+  error - lib\features\leagues\domain\models\league_section_model.dart:47:5 - A function body must be provided. Try adding a function body. - missing_function_body
+  error - lib\features\leagues\domain\models\league_section_model.dart:49:13 - The final variable 'leagueId' must be initialized. Try initializing the variable. - final_not_initialized
+  error - lib\features\leagues\domain\models\league_section_model.dart:50:16 - The final variable 'name' must be initialized. Try initializing the variable. - final_not_initialized
+  error - lib\features\leagues\domain\models\league_section_model.dart:51:16 - The final variable 'country' must be initialized. Try initializing the variable. - final_not_initialized
+  error - lib\features\leagues\domain\models\league_section_model.dart:52:16 - The final variable 'logo' must be initialized. Try initializing the variable. - final_not_initialized
+  error - lib\features\leagues\domain\models\league_section_model.dart:53:16 - The final variable 'season' must be initialized. Try initializing the variable. - final_not_initialized
+  error - lib\features\leagues\domain\models\league_section_model.dart:54:14 - The final variable 'isFeatured' must be initialized. Try initializing the variable. - final_not_initialized
+  error - lib\features\leagues\domain\models\league_section_model.dart:55:13 - The final variable 'displayOrder' must be initialized. Try initializing the variable. - final_not_initialized
+  error - lib\features\leagues\domain\models\league_section_model.dart:57:3 - Top-level declarations can't be declared to be 'factory'. Try removing the keyword 'factory'. - factory_top_level_declaration
+  error - lib\features\leagues\domain\models\league_section_model.dart:57:11 - Functions must have an explicit list of parameters. Try adding a parameter list. - missing_function_parameters
+  error - lib\features\leagues\domain\models\league_section_model.dart:57:11 - The name 'LeagueSummaryModel' is already defined. Try renaming one of the declarations. - duplicate_definition
+           - The first definition of this name at lib\features\leagues\domain\models\league_section_model.dart:39:9.
+  error - lib\features\leagues\domain\models\league_section_model.dart:57:29 - A function body must be provided. Try adding a function body. - missing_function_body
+  error - lib\features\leagues\domain\models\league_section_model.dart:57:29 - Expected a method, getter, setter or operator declaration. This appears to be incomplete code. Try removing it or completing it. - expected_executable
+  error - lib\features\leagues\domain\models\league_section_model.dart:84:1 - Expected a method, getter, setter or operator declaration. This appears to be incomplete code. Try removing it or completing it. - expected_executable
+warning - lib\features\leagues\domain\models\league_section_model.dart:1:8 - Unused import: 'package:fover/features/leagues/domain/models/league_summary_model.dart'. Try removing the import directive. - unused_import
+   info - lib\features\leagues\domain\models\league_section_model.dart:39:9 - Missing type annotation. Try adding a type annotation. - strict_top_level_inference
+   info - lib\features\leagues\domain\models\league_section_model.dart:39:9 - The variable name 'LeagueSummaryModel' isn't a lowerCamelCase identifier. Try changing the name to follow the lowerCamelCase style. - non_constant_identifier_names
+   info - lib\features\leagues\domain\models\league_section_model.dart:57:11 - Missing type annotation. Try adding a type annotation. - strict_top_level_inference
+   info - lib\features\leagues\domain\models\league_section_model.dart:57:11 - The variable name 'LeagueSummaryModel' isn't a lowerCamelCase identifier. Try changing the name to follow the lowerCamelCase style. - non_constant_identifier_names
+   info - lib\features\leagues\domain\models\league_section_model.dart:57:30 - Missing type annotation. Try adding a type annotation. - strict_top_level_inference
+
+30 issues found.

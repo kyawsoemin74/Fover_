@@ -2,20 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fover/features/home/providers/date_selection_provider.dart';
 import 'package:fover/features/home/providers/home_provider.dart';
+import 'package:fover/shared/widgets/profile_action_button.dart';
 
 class HomeTopSection extends ConsumerWidget {
   const HomeTopSection({
     super.key,
     this.onNotifications,
-    this.onCalendar,
     this.onSearch,
-    this.onMenu,
+    this.onProfile,
   });
 
   final VoidCallback? onNotifications;
-  final VoidCallback? onCalendar;
   final VoidCallback? onSearch;
-  final VoidCallback? onMenu;
+  final VoidCallback? onProfile;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -68,24 +67,22 @@ class HomeTopSection extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(width: 6),
-                
-                const SizedBox(width: 4),
-                _IconAction(
-                  icon: Icons.calendar_today_outlined,
-                  onTap: onCalendar,
-                  tooltip: 'Calendar',
+                ProfileActionButton(
+                  icon: Icons.notifications_none,
+                  tooltip: 'Notifications',
+                  onTap: onNotifications,
                 ),
                 const SizedBox(width: 4),
-                _IconAction(
+                ProfileActionButton(
                   icon: Icons.search,
-                  onTap: onSearch,
                   tooltip: 'Search',
+                  onTap: onSearch,
                 ),
                 const SizedBox(width: 4),
-                _IconAction(
-                  icon: Icons.more_vert,
-                  onTap: onMenu,
-                  tooltip: 'More',
+                ProfileActionButton(
+                  icon: Icons.person_outline,
+                  tooltip: 'Profile',
+                  onTap: onProfile,
                 ),
               ],
             ),
@@ -259,37 +256,6 @@ class _DateTabItem extends StatelessWidget {
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _IconAction extends StatelessWidget {
-  const _IconAction({
-    required this.icon,
-    this.onTap,
-    required this.tooltip,
-  });
-
-  final IconData icon;
-  final VoidCallback? onTap;
-  final String tooltip;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Material(
-      color: theme.colorScheme.onSurface.withAlpha(10),
-      shape: const CircleBorder(),
-      child: IconButton(
-        onPressed: onTap,
-        icon: Icon(icon, size: 20),
-        tooltip: tooltip,
-        splashRadius: 20,
-        padding: EdgeInsets.zero,
-        constraints: const BoxConstraints.tightFor(width: 36, height: 36),
-        color: theme.colorScheme.onSurface,
       ),
     );
   }

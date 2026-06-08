@@ -1,4 +1,5 @@
 class ApiConstants {
+  static const groupedLeagues = '/api/leagues/grouped';
   static const matches = '/api/matches/';
   static const liveMatches = '/api/matches/live_all';
   static String matchesByDate(String date) => '/api/matches/date/$date';
