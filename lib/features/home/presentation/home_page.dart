@@ -167,6 +167,7 @@ class _HomePageState extends ConsumerState<HomePage> {
       final response = await ref
           .read(authApiServiceProvider)
           .signInWithGoogle(idToken);
+
       await ref
           .read(authProvider.notifier)
           .saveSession(

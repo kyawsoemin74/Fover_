@@ -34,11 +34,6 @@ class FoverBottomNavigationBar extends StatelessWidget {
           label: 'Leagues',
         ),
         NavigationDestination(
-          icon: Icon(Icons.star_border),
-          selectedIcon: Icon(Icons.star),
-          label: 'Favorites',
-        ),
-        NavigationDestination(
           icon: Icon(Icons.more_horiz),
           selectedIcon: Icon(Icons.more_horiz),
           label: 'More',

@@ -114,6 +114,7 @@ class SecureAuthStorage implements AuthStorage {
   Future<AuthSession?> readSession() async {
     final userJson = await _storage.read(key: _authUserKey);
     final accessToken = await _storage.read(key: _authAccessTokenKey);
+    final refreshToken = await _storage.read(key: _authRefreshTokenKey);
 
     if (userJson == null || accessToken == null || accessToken.isEmpty) {
       return null;
@@ -125,7 +126,7 @@ class SecureAuthStorage implements AuthStorage {
       );
       return session.copyWith(
         accessToken: accessToken,
-        refreshToken: await _storage.read(key: _authRefreshTokenKey),
+        refreshToken: refreshToken,
       );
     } catch (_) {
       return null;
@@ -179,6 +180,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     );
 
     await _storage.saveSession(session);
+
     state = AuthState(
       status: AuthStatus.authenticated,
       user: user,

@@ -14,7 +14,6 @@ class BottomNavPage extends StatelessWidget {
     '/',
     '/news',
     '/leagues',
-    '/favorites',
     '/more',
   ];
 

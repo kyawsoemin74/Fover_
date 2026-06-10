@@ -35,7 +35,7 @@ class AuthApiService {
   Future<GoogleAuthResponse> signInWithGoogle(String idToken) async {
     final response = await _dio.post<Map<String, dynamic>>(
       '/api/auth/google',
-      queryParameters: {
+      data: {
         'token_in': idToken,
       },
     );

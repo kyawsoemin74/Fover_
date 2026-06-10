@@ -5,22 +5,13 @@ class CustomAppBar extends StatelessWidget {
     super.key,
     required this.title,
     this.subtitle,
-    this.onNotifications,
-    this.onCalendar,
-    this.onSearch,
-    this.onMenu,
   });
 
   final String title;
   final String? subtitle;
-  final VoidCallback? onNotifications;
-  final VoidCallback? onCalendar;
-  final VoidCallback? onSearch;
-  final VoidCallback? onMenu;
 
   @override
   Widget build(BuildContext context) {
-    final color = Theme.of(context).colorScheme.onSurface;
     final primary = Theme.of(context).colorScheme.primary;
 
     return Padding(
@@ -62,43 +53,6 @@ class CustomAppBar extends StatelessWidget {
                 ],
               ],
             ),
-          ),
-          IconButton(
-            onPressed: onNotifications,
-            icon: const Icon(Icons.notifications_none),
-            tooltip: 'Notifications',
-            color: color,
-            splashRadius: 22,
-          ),
-          IconButton(
-            onPressed: onCalendar,
-            icon: const Icon(Icons.calendar_today_outlined),
-            tooltip: 'Calendar',
-            color: color,
-            splashRadius: 22,
-          ),
-          IconButton(
-            onPressed: onSearch,
-            icon: const Icon(Icons.search),
-            tooltip: 'Search',
-            color: color,
-            splashRadius: 22,
-          ),
-          PopupMenuButton<String>(
-            color: Theme.of(context).colorScheme.surface,
-            icon: Icon(
-              Icons.more_vert,
-              color: color,
-            ),
-            itemBuilder: (context) => [
-              const PopupMenuItem(value: 'refresh', child: Text('Refresh')),
-              const PopupMenuItem(value: 'settings', child: Text('Settings')),
-            ],
-            onSelected: (value) {
-              if (value == 'settings') {
-                onMenu?.call();
-              }
-            },
           ),
         ],
       ),

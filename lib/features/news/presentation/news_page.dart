@@ -305,36 +305,7 @@ class _CompactNewsHeader extends StatelessWidget {
               ],
             ),
           ),
-          IconButton(
-            onPressed: null,
-            icon: const Icon(Icons.notifications_none),
-            tooltip: 'Notifications',
-            color: color,
-            splashRadius: 18,
-          ),
-          IconButton(
-            onPressed: null,
-            icon: const Icon(Icons.calendar_today_outlined),
-            tooltip: 'Calendar',
-            color: color,
-            splashRadius: 18,
-          ),
-          IconButton(
-            onPressed: null,
-            icon: const Icon(Icons.search),
-            tooltip: 'Search',
-            color: color,
-            splashRadius: 18,
-          ),
-          PopupMenuButton<String>(
-            color: Theme.of(context).colorScheme.surface,
-            icon: Icon(Icons.more_vert, color: color),
-            itemBuilder: (context) => [
-              const PopupMenuItem(value: 'refresh', child: Text('Refresh')),
-              const PopupMenuItem(value: 'settings', child: Text('Settings')),
-            ],
-            onSelected: (_) {},
-          ),
+
         ],
       ),
     );
