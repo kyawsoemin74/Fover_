@@ -16,10 +16,8 @@ class MatchDetailStatsSection extends ConsumerWidget {
     }
 
     if (state.status == MatchStatsStatus.error) {
-      return _SectionError(
-        message: state.errorMessage,
-        onRetry: () =>
-            ref.read(matchStatsProvider(matchId).notifier).loadStats(),
+      return const _SectionPlaceholder(
+        message: 'Statistics data is not available for this match yet.',
       );
     }
 
@@ -213,31 +211,3 @@ class _SectionPlaceholder extends StatelessWidget {
   }
 }
 
-class _SectionError extends StatelessWidget {
-  const _SectionError({required this.message, required this.onRetry});
-
-  final String? message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        color: const Color(0xFF111827),
-        borderRadius: BorderRadius.circular(22),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            message ?? 'Unable to load statistics.',
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.white54),
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton(onPressed: onRetry, child: const Text('Retry')),
-        ],
-      ),
-    );
-  }
-}

@@ -14,21 +14,19 @@ class DioErrorMapper {
       return 'Network unavailable. Please check your internet connection.';
     }
 
-    final responseMessage = _extractResponseMessage(error.response);
-    if (responseMessage != null && responseMessage.isNotEmpty) {
-      return responseMessage;
+    final statusCode = error.response?.statusCode;
+    if (statusCode == 401 || statusCode == 403) {
+      return 'This information is unavailable right now.';
     }
 
-    return error.message ?? 'Unknown network error occurred.';
-  }
-
-  static String? _extractResponseMessage(Response<dynamic>? response) {
-    if (response == null) return null;
-    final payload = response.data;
-    if (payload is String && payload.isNotEmpty) return payload;
-    if (payload is Map<String, dynamic>) {
-      return payload['message'] as String? ?? payload['error'] as String?;
+    if (statusCode == 404) {
+      return 'This information is unavailable right now.';
     }
-    return null;
+
+    if (statusCode != null && statusCode >= 500) {
+      return 'The service is temporarily unavailable. Please try again later.';
+    }
+
+    return 'Something went wrong. Please try again later.';
   }
 }

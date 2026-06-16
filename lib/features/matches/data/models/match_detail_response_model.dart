@@ -21,6 +21,12 @@ class MatchDetailResponseModel {
     required this.awayTeamLogo,
     required this.homeScore,
     required this.awayScore,
+    this.hasLineups = false,
+    this.hasOdds = false,
+    this.hasH2H = false,
+    this.hasStandings = false,
+    this.isKnockout = false,
+    this.hasBracket = false,
     this.venueName,
     this.venueCity,
     this.createdAt,
@@ -45,6 +51,12 @@ class MatchDetailResponseModel {
   final String awayTeamLogo;
   final int homeScore;
   final int awayScore;
+  final bool hasLineups;
+  final bool hasOdds;
+  final bool hasH2H;
+  final bool hasStandings;
+  final bool isKnockout;
+  final bool hasBracket;
   final String? venueName;
   final String? venueCity;
   final String? createdAt;
@@ -53,8 +65,14 @@ class MatchDetailResponseModel {
   factory MatchDetailResponseModel.fromJson(Map<String, dynamic> json) {
     final rawMatchTime = json['match_time'] as String? ?? '';
     return MatchDetailResponseModel(
-      matchId: json['match_id'] as int? ?? int.tryParse(json['match_id']?.toString() ?? '') ?? 0,
-      leagueId: json['league_id'] as int? ?? int.tryParse(json['league_id']?.toString() ?? '') ?? 0,
+      matchId:
+          json['match_id'] as int? ??
+          int.tryParse(json['match_id']?.toString() ?? '') ??
+          0,
+      leagueId:
+          json['league_id'] as int? ??
+          int.tryParse(json['league_id']?.toString() ?? '') ??
+          0,
       season: _parseSeason(json),
       leagueName: json['league_name'] as String? ?? '',
       leagueLogo: json['league_logo'] as String? ?? '',
@@ -62,15 +80,36 @@ class MatchDetailResponseModel {
       countryLogo: json['country_logo'] as String? ?? '',
       matchTime: _formatLocalTime(rawMatchTime),
       status: json['status'] as String? ?? 'UPCOMING',
-      elapsed: json['elapsed'] as int? ?? int.tryParse(json['elapsed']?.toString() ?? '') ?? 0,
+      elapsed:
+          json['elapsed'] as int? ??
+          int.tryParse(json['elapsed']?.toString() ?? '') ??
+          0,
       homeTeam: json['home_team'] as String? ?? '',
-      homeTeamId: json['home_team_id'] as int? ?? int.tryParse(json['home_team_id']?.toString() ?? '') ?? 0,
+      homeTeamId:
+          json['home_team_id'] as int? ??
+          int.tryParse(json['home_team_id']?.toString() ?? '') ??
+          0,
       homeTeamLogo: json['home_team_logo'] as String? ?? '',
       awayTeam: json['away_team'] as String? ?? '',
-      awayTeamId: json['away_team_id'] as int? ?? int.tryParse(json['away_team_id']?.toString() ?? '') ?? 0,
+      awayTeamId:
+          json['away_team_id'] as int? ??
+          int.tryParse(json['away_team_id']?.toString() ?? '') ??
+          0,
       awayTeamLogo: json['away_team_logo'] as String? ?? '',
-      homeScore: json['home_score'] as int? ?? int.tryParse(json['home_score']?.toString() ?? '') ?? 0,
-      awayScore: json['away_score'] as int? ?? int.tryParse(json['away_score']?.toString() ?? '') ?? 0,
+      homeScore:
+          json['home_score'] as int? ??
+          int.tryParse(json['home_score']?.toString() ?? '') ??
+          0,
+      awayScore:
+          json['away_score'] as int? ??
+          int.tryParse(json['away_score']?.toString() ?? '') ??
+          0,
+      hasLineups: _parseBool(json, 'has_lineups'),
+      hasOdds: _parseBool(json, 'has_odds'),
+      hasH2H: _parseBool(json, 'has_h2h'),
+      hasStandings: _parseBool(json, 'has_standings'),
+      isKnockout: _parseBool(json, 'is_knockout'),
+      hasBracket: _parseBool(json, 'has_bracket'),
       venueName: json['venue_name'] as String?,
       venueCity: json['venue_city'] as String?,
       createdAt: json['created_at'] as String?,
@@ -98,6 +137,12 @@ class MatchDetailResponseModel {
       awayTeamLogo: awayTeamLogo,
       homeScore: homeScore,
       awayScore: awayScore,
+      hasLineups: hasLineups,
+      hasOdds: hasOdds,
+      hasH2H: hasH2H,
+      hasStandings: hasStandings,
+      isKnockout: isKnockout,
+      hasBracket: hasBracket,
       venueName: venueName,
       venueCity: venueCity,
       createdAt: createdAt,
@@ -111,6 +156,17 @@ class MatchDetailResponseModel {
         json['competition_season']?.toString() ??
         json['league_season']?.toString() ??
         '';
+  }
+
+  static bool _parseBool(Map<String, dynamic> json, String key) {
+    final value = json[key];
+    if (value is bool) return value;
+    if (value is num) return value != 0;
+    if (value is String) {
+      final normalized = value.trim().toLowerCase();
+      return normalized == 'true' || normalized == '1' || normalized == 'yes';
+    }
+    return false;
   }
 
   static String _formatLocalTime(String rawTime) {

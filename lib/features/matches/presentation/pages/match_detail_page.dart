@@ -14,7 +14,6 @@ import 'package:fover/features/matches/presentation/sections/match_detail_h2h_se
 import 'package:fover/features/matches/presentation/sections/match_detail_lineup_section.dart';
 import 'package:fover/features/matches/presentation/sections/match_detail_odds_section.dart';
 import 'package:fover/features/matches/presentation/sections/match_detail_standings_section.dart';
-import 'package:fover/features/matches/presentation/sections/match_detail_stats_section.dart';
 import 'package:fover/features/matches/presentation/widgets/match_detail_header.dart';
 import 'package:fover/features/matches/presentation/widgets/match_detail_loading.dart';
 import 'package:fover/features/matches/presentation/widgets/match_detail_tab_bar.dart';
@@ -35,25 +34,49 @@ class MatchDetailPage extends ConsumerStatefulWidget {
   ConsumerState<MatchDetailPage> createState() => _MatchDetailPageState();
 }
 
-enum MatchDetailTab { details, odds, stats, lineups, standings, h2h }
+enum MatchDetailTab { details, lineups, odds, standings, knockout, h2h }
 
 extension MatchDetailTabData on MatchDetailTab {
   String get title {
     switch (this) {
       case MatchDetailTab.details:
         return 'Details';
-      case MatchDetailTab.odds:
-        return 'Odds';
-      case MatchDetailTab.stats:
-        return 'Stats';
       case MatchDetailTab.lineups:
         return 'Lineups';
+      case MatchDetailTab.odds:
+        return 'Odds';
       case MatchDetailTab.standings:
         return 'Standings';
+      case MatchDetailTab.knockout:
+        return 'Knockout';
       case MatchDetailTab.h2h:
         return 'H2H';
     }
   }
+}
+
+List<MatchDetailTab> buildMatchDetailTabs(MatchDetailInfo detail) {
+  final tabs = <MatchDetailTab>[MatchDetailTab.details];
+
+  if (detail.hasLineups) {
+    tabs.add(MatchDetailTab.lineups);
+  }
+
+  if (detail.hasOdds) {
+    tabs.add(MatchDetailTab.odds);
+  }
+
+  if (detail.isKnockout && detail.hasBracket) {
+    tabs.add(MatchDetailTab.knockout);
+  } else if (detail.hasStandings) {
+    tabs.add(MatchDetailTab.standings);
+  }
+
+  if (detail.hasH2H) {
+    tabs.add(MatchDetailTab.h2h);
+  }
+
+  return tabs;
 }
 
 class _MatchDetailPageState extends ConsumerState<MatchDetailPage> {
@@ -68,6 +91,7 @@ class _MatchDetailPageState extends ConsumerState<MatchDetailPage> {
   void _loadInitialTabData() {
     if (widget.matchId <= 0) return;
     ref.read(matchEventsProvider(widget.matchId).notifier).loadEvents();
+    ref.read(matchStatsProvider(widget.matchId).notifier).loadStats();
   }
 
   void _onTabSelected(MatchDetailTab tab) {
@@ -84,17 +108,16 @@ class _MatchDetailPageState extends ConsumerState<MatchDetailPage> {
     switch (tab) {
       case MatchDetailTab.details:
         ref.read(matchEventsProvider(widget.matchId).notifier).loadEvents();
+        ref.read(matchStatsProvider(widget.matchId).notifier).loadStats();
         break;
       case MatchDetailTab.odds:
         ref.read(matchOddsProvider(widget.matchId).notifier).loadOdds();
-        break;
-      case MatchDetailTab.stats:
-        ref.read(matchStatsProvider(widget.matchId).notifier).loadStats();
         break;
       case MatchDetailTab.lineups:
         ref.read(matchLineupProvider(widget.matchId).notifier).loadLineup();
         break;
       case MatchDetailTab.standings:
+      case MatchDetailTab.knockout:
         break;
       case MatchDetailTab.h2h:
         ref
@@ -165,6 +188,11 @@ class _MatchDetailPageState extends ConsumerState<MatchDetailPage> {
   }
 
   Widget _buildMatchCenter(MatchDetailInfo detail) {
+    final tabs = buildMatchDetailTabs(detail);
+    final selectedTab = tabs.contains(_selectedTab)
+        ? _selectedTab
+        : MatchDetailTab.details;
+
     return CustomScrollView(
       physics: const ClampingScrollPhysics(),
       slivers: [
@@ -176,22 +204,28 @@ class _MatchDetailPageState extends ConsumerState<MatchDetailPage> {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           sliver: SliverToBoxAdapter(
             child: MatchDetailTabBar(
-              selectedTab: _selectedTab,
+              selectedTab: selectedTab,
+              tabs: tabs,
               onTabSelected: _onTabSelected,
             ),
           ),
         ),
         SliverPadding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-          sliver: SliverToBoxAdapter(child: _buildSelectedSection(detail)),
+          sliver: SliverToBoxAdapter(
+            child: _buildSelectedSection(detail, selectedTab),
+          ),
         ),
         const SliverPadding(padding: EdgeInsets.only(bottom: 32)),
       ],
     );
   }
 
-  Widget _buildSelectedSection(MatchDetailInfo detail) {
-    switch (_selectedTab) {
+  Widget _buildSelectedSection(
+    MatchDetailInfo detail,
+    MatchDetailTab selectedTab,
+  ) {
+    switch (selectedTab) {
       case MatchDetailTab.details:
         return MatchDetailDetailsSection(
           matchId: widget.matchId,
@@ -200,11 +234,10 @@ class _MatchDetailPageState extends ConsumerState<MatchDetailPage> {
         );
       case MatchDetailTab.odds:
         return MatchDetailOddsSection(matchId: widget.matchId);
-      case MatchDetailTab.stats:
-        return MatchDetailStatsSection(matchId: widget.matchId);
       case MatchDetailTab.lineups:
         return MatchDetailLineupSection(matchId: widget.matchId);
       case MatchDetailTab.standings:
+      case MatchDetailTab.knockout:
         return MatchDetailStandingsSection(detail: detail);
       case MatchDetailTab.h2h:
         return MatchDetailH2HSection(
@@ -219,17 +252,17 @@ class _MatchDetailPageState extends ConsumerState<MatchDetailPage> {
   Widget build(BuildContext context) {
     if (widget.matchId <= 0) {
       return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.chevron_left_rounded, size: 24),
-          onPressed: () => context.pop(),
-          tooltip: 'Back',
+        backgroundColor: Colors.black,
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.chevron_left_rounded, size: 24),
+            onPressed: () => context.pop(),
+            tooltip: 'Back',
+          ),
+          title: const Text('Match Detail'),
         ),
-        title: const Text('Match Detail'),
-      ),
-      body: const Center(child: Text('Invalid match selected.')),
-    );
+        body: const Center(child: Text('Invalid match selected.')),
+      );
     }
 
     final summaryState = ref.watch(matchDetailProvider(widget.matchId));
@@ -242,7 +275,30 @@ class _MatchDetailPageState extends ConsumerState<MatchDetailPage> {
           onPressed: () => context.pop(),
           tooltip: 'Back',
         ),
-        title: const Text('Match Detail'),
+        title: const SizedBox.shrink(),
+        actions: [
+          // TODO: Match Notifications
+          IconButton(
+            icon: const Icon(Icons.notifications_outlined, size: 20),
+            color: Colors.white70,
+            onPressed: () {},
+            tooltip: 'Match Notifications',
+          ),
+          // TODO: Favorite Match
+          IconButton(
+            icon: const Icon(Icons.star_outline, size: 20),
+            color: Colors.white70,
+            onPressed: () {},
+            tooltip: 'Favorite Match',
+          ),
+          // TODO: More Actions Menu
+          IconButton(
+            icon: const Icon(Icons.more_vert, size: 20),
+            color: Colors.white70,
+            onPressed: () {},
+            tooltip: 'More Actions Menu',
+          ),
+        ],
         backgroundColor: const Color(0xFF090B13),
         elevation: 0,
         centerTitle: false,

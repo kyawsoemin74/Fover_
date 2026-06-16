@@ -18,6 +18,12 @@ class MatchDetailInfo {
     required this.awayTeamLogo,
     required this.homeScore,
     required this.awayScore,
+    this.hasLineups = false,
+    this.hasOdds = false,
+    this.hasH2H = false,
+    this.hasStandings = false,
+    this.isKnockout = false,
+    this.hasBracket = false,
     this.venueName,
     this.venueCity,
     this.createdAt,
@@ -42,6 +48,12 @@ class MatchDetailInfo {
   final String awayTeamLogo;
   final int homeScore;
   final int awayScore;
+  final bool hasLineups;
+  final bool hasOdds;
+  final bool hasH2H;
+  final bool hasStandings;
+  final bool isKnockout;
+  final bool hasBracket;
   final String? venueName;
   final String? venueCity;
   final String? createdAt;
