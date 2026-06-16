@@ -4,6 +4,7 @@ class ApiConstants {
   static const liveMatches = '/api/matches/live_all';
   static String matchesByDate(String date) => '/api/matches/date/$date';
   static String matchById(int matchId) => '/api/matches/$matchId';
+  static String matchStatistics(int matchId) => '/api/matches/$matchId/statistics';
   static String matchEvents(int matchId) => '/api/matches/$matchId/events';
   static String matchLineup(int matchId) => '/api/matches/$matchId/lineup';
   static String matchOdds(int matchId) => '/api/matches/$matchId/odds';

@@ -108,10 +108,15 @@ class MatchDetailDetailsSection extends ConsumerWidget {
       matchInfo?.venueCity,
     ].where((entry) => entry != null && entry.trim().isNotEmpty).join(', ');
     final locationText = matchInfo?.venueCity?.trim() ?? '';
+    final showStatistics = matchInfo != null && !_isPreMatchStatus(matchInfo.status);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (showStatistics) ...[
+          MatchDetailStatsSection(matchId: matchId),
+          const SizedBox(height: 16),
+        ],
         if (showTimeline) ...[
           Container(
             padding: const EdgeInsets.all(16),
@@ -177,11 +182,17 @@ class MatchDetailDetailsSection extends ConsumerWidget {
             ],
           ),
         ),
-        const SizedBox(height: 16),
-        MatchDetailStatsSection(matchId: matchId),
       ],
     );
   }
+}
+
+bool _isPreMatchStatus(String status) {
+  final normalized = status.trim().toUpperCase();
+  return normalized == 'NS' ||
+      normalized == 'TBD' ||
+      normalized == 'NOT STARTED' ||
+      normalized == 'NOT_STARTED';
 }
 
 class MatchDetailSectionHeader extends StatelessWidget {

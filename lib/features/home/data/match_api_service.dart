@@ -134,10 +134,25 @@ class MatchApiService {
 
   Future<ApiResult<dynamic>> fetchMatchStats(int matchId) async {
     try {
-      final response = await _execute(
-        'matchStats',
-        () => _dioClient.dio.get(ApiConstants.matchById(matchId)),
-      );
+      Response response;
+      try {
+        // Primary: call the dedicated statistics endpoint
+        response = await _execute(
+          'matchStats',
+          () => _dioClient.dio.get(ApiConstants.matchStatistics(matchId)),
+        );
+      } on DioException catch (e) {
+        // Fallback to matchById for backward compatibility if the endpoint is not available
+        if (e.response?.statusCode == 404) {
+          response = await _execute(
+            'matchDetailFallback',
+            () => _dioClient.dio.get(ApiConstants.matchById(matchId)),
+          );
+        } else {
+          rethrow;
+        }
+      }
+
       return ApiResult.success(response.data);
     } on DioException catch (exception, stackTrace) {
       return ApiResult.failure(DioErrorMapper.map(exception), stackTrace);

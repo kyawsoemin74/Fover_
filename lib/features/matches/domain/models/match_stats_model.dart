@@ -1,25 +1,28 @@
+import 'statistics_item.dart';
+
 class MatchStatsInfo {
   const MatchStatsInfo({
-    required this.homePossession,
-    required this.awayPossession,
-    required this.homeShots,
-    required this.awayShots,
-    required this.homeShotsOnTarget,
-    required this.awayShotsOnTarget,
-    required this.homeCorners,
-    required this.awayCorners,
-    required this.homeAttacks,
-    required this.awayAttacks,
-    required this.homeDangerousAttacks,
-    required this.awayDangerousAttacks,
-    required this.homeFouls,
-    required this.awayFouls,
-    required this.homeOffsides,
-    required this.awayOffsides,
-    required this.homeYellowCards,
-    required this.awayYellowCards,
-    required this.homeRedCards,
-    required this.awayRedCards,
+    this.homePossession = 0,
+    this.awayPossession = 0,
+    this.homeShots = 0,
+    this.awayShots = 0,
+    this.homeShotsOnTarget = 0,
+    this.awayShotsOnTarget = 0,
+    this.homeCorners = 0,
+    this.awayCorners = 0,
+    this.homeAttacks = 0,
+    this.awayAttacks = 0,
+    this.homeDangerousAttacks = 0,
+    this.awayDangerousAttacks = 0,
+    this.homeFouls = 0,
+    this.awayFouls = 0,
+    this.homeOffsides = 0,
+    this.awayOffsides = 0,
+    this.homeYellowCards = 0,
+    this.awayYellowCards = 0,
+    this.homeRedCards = 0,
+    this.awayRedCards = 0,
+    this.items,
   });
 
   final int homePossession;
@@ -42,10 +45,120 @@ class MatchStatsInfo {
   final int awayYellowCards;
   final int homeRedCards;
   final int awayRedCards;
+  final List<StatisticsItem>? items;
 
-  bool get hasData => homePossession + awayPossession > 0 || homeShots + awayShots > 0;
+  factory MatchStatsInfo.empty() => const MatchStatsInfo(items: <StatisticsItem>[]);
+
+  bool get hasData {
+    if (homePossession + awayPossession > 0) return true;
+    if (homeShots + awayShots > 0) return true;
+    if (items != null && items!.isNotEmpty) {
+      for (final it in items!) {
+        if (_toNumFlexible(it.homeValue) > 0 || _toNumFlexible(it.awayValue) > 0) return true;
+      }
+    }
+    return false;
+  }
 
   factory MatchStatsInfo.fromJson(Map<String, dynamic> json) {
+    // New API: statistics is a list of metric entries
+    final statsList = json['statistics'] as List<dynamic>?;
+    if (statsList != null && statsList.isNotEmpty) {
+      final items = statsList
+          .whereType<Map<String, dynamic>>()
+          .map(StatisticsItem.fromJson)
+          .toList();
+
+      // default accumulators
+      var homePossession = 0;
+      var awayPossession = 0;
+      var homeShots = 0;
+      var awayShots = 0;
+      var homeShotsOnTarget = 0;
+      var awayShotsOnTarget = 0;
+      var homeCorners = 0;
+      var awayCorners = 0;
+      var homeAttacks = 0;
+      var awayAttacks = 0;
+      var homeDangerousAttacks = 0;
+      var awayDangerousAttacks = 0;
+      var homeFouls = 0;
+      var awayFouls = 0;
+      var homeOffsides = 0;
+      var awayOffsides = 0;
+      var homeYellowCards = 0;
+      var awayYellowCards = 0;
+      var homeRedCards = 0;
+      var awayRedCards = 0;
+
+      for (final item in items) {
+        final key = item.dataName.toLowerCase().replaceAll(RegExp(r'[^a-z0-9_]'), '_');
+        final h = _toIntFlexible(item.homeValue);
+        final a = _toIntFlexible(item.awayValue);
+
+        if (key.contains('possession') || key.contains('ball_possession')) {
+          homePossession = h;
+          awayPossession = a;
+        } else if (key.contains('shots_on') || key.contains('shots_on_goal') || key.contains('shots_on_target')) {
+          homeShotsOnTarget = h;
+          awayShotsOnTarget = a;
+        } else if (key == 'total_shots' || key == 'shots_total' || key == 'shots_total_home' || key == 'shots_total_away') {
+          homeShots = h;
+          awayShots = a;
+        } else if (key.contains('shots') && !key.contains('on') && !key.contains('off')) {
+          // Map remaining 'shots' that are not 'shots_on' or 'shots_off' to total shots
+          homeShots = h;
+          awayShots = a;
+        } else if (key.contains('corner')) {
+          homeCorners = h;
+          awayCorners = a;
+        } else if (key.contains('danger') || key.contains('dangerous')) {
+          homeDangerousAttacks = h;
+          awayDangerousAttacks = a;
+        } else if (key.contains('attack')) {
+          homeAttacks = h;
+          awayAttacks = a;
+        } else if (key.contains('foul')) {
+          homeFouls = h;
+          awayFouls = a;
+        } else if (key.contains('offs') || key.contains('offside')) {
+          homeOffsides = h;
+          awayOffsides = a;
+        } else if (key.contains('yellow')) {
+          homeYellowCards = h;
+          awayYellowCards = a;
+        } else if (key.contains('red')) {
+          homeRedCards = h;
+          awayRedCards = a;
+        }
+      }
+
+      return MatchStatsInfo(
+        homePossession: homePossession,
+        awayPossession: awayPossession,
+        homeShots: homeShots,
+        awayShots: awayShots,
+        homeShotsOnTarget: homeShotsOnTarget,
+        awayShotsOnTarget: awayShotsOnTarget,
+        homeCorners: homeCorners,
+        awayCorners: awayCorners,
+        homeAttacks: homeAttacks,
+        awayAttacks: awayAttacks,
+        homeDangerousAttacks: homeDangerousAttacks,
+        awayDangerousAttacks: awayDangerousAttacks,
+        homeFouls: homeFouls,
+        awayFouls: awayFouls,
+        homeOffsides: homeOffsides,
+        awayOffsides: awayOffsides,
+        homeYellowCards: homeYellowCards,
+        awayYellowCards: awayYellowCards,
+        homeRedCards: homeRedCards,
+        awayRedCards: awayRedCards,
+        items: items,
+      );
+    }
+
+    // Backwards-compatible behavior: support legacy 'stats' map or flat keys
     final stats = json['stats'] as Map<String, dynamic>? ?? json;
 
     return MatchStatsInfo(
@@ -72,41 +185,45 @@ class MatchStatsInfo {
     );
   }
 
-  factory MatchStatsInfo.empty() => const MatchStatsInfo(
-        homePossession: 0,
-        awayPossession: 0,
-        homeShots: 0,
-        awayShots: 0,
-        homeShotsOnTarget: 0,
-        awayShotsOnTarget: 0,
-        homeCorners: 0,
-        awayCorners: 0,
-        homeAttacks: 0,
-        awayAttacks: 0,
-        homeDangerousAttacks: 0,
-        awayDangerousAttacks: 0,
-        homeFouls: 0,
-        awayFouls: 0,
-        homeOffsides: 0,
-        awayOffsides: 0,
-        homeYellowCards: 0,
-        awayYellowCards: 0,
-        homeRedCards: 0,
-        awayRedCards: 0,
-      );
-
   static int _statValue(Map<String, dynamic> json, List<String> keys) {
     for (final key in keys) {
       final value = json[key];
-      if (value != null) return _toInt(value);
+      if (value != null) return _toIntFlexible(value);
     }
     return 0;
   }
 
-  static int _toInt(dynamic value) {
+  static int _toIntFlexible(dynamic value) {
+    if (value == null) return 0;
     if (value is int) return value;
     if (value is double) return value.round();
-    if (value is String) return int.tryParse(value) ?? 0;
+    if (value is String) {
+      var s = value.trim();
+      // remove percent sign
+      if (s.endsWith('%')) {
+        s = s.substring(0, s.length - 1).trim();
+      }
+      // remove commas
+      s = s.replaceAll(',', '');
+      final d = double.tryParse(s);
+      if (d != null) return d.round();
+      return int.tryParse(s) ?? 0;
+    }
     return 0;
+  }
+
+  static double _toNumFlexible(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is int) return value.toDouble();
+    if (value is double) return value;
+    if (value is String) {
+      var s = value.trim();
+      if (s.endsWith('%')) s = s.substring(0, s.length - 1).trim();
+      s = s.replaceAll(',', '');
+      final d = double.tryParse(s);
+      if (d != null) return d;
+      return 0.0;
+    }
+    return 0.0;
   }
 }

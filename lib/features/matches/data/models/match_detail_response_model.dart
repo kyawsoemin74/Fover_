@@ -1,3 +1,4 @@
+
 import 'package:intl/intl.dart';
 import 'package:fover/features/matches/domain/models/match_detail_model.dart';
 
@@ -64,6 +65,9 @@ class MatchDetailResponseModel {
 
   factory MatchDetailResponseModel.fromJson(Map<String, dynamic> json) {
     final rawMatchTime = json['match_time'] as String? ?? '';
+
+    
+
     return MatchDetailResponseModel(
       matchId:
           json['match_id'] as int? ??
