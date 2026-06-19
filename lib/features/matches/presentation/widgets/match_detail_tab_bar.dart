@@ -20,7 +20,7 @@ class MatchDetailTabBar extends StatelessWidget {
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
         child: Row(
           children: tabs.map((tab) {
             final active = tab == selectedTab;
@@ -35,9 +35,7 @@ class MatchDetailTabBar extends StatelessWidget {
                     duration: const Duration(milliseconds: 220),
                     curve: Curves.easeOutCubic,
                     decoration: BoxDecoration(
-                      color: active
-                          ? const Color(0xFF122B46)
-                          : Colors.transparent,
+                      color: Colors.transparent,
                       borderRadius: BorderRadius.circular(16),
                     ),
                     padding: const EdgeInsets.symmetric(

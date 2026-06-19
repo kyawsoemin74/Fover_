@@ -26,18 +26,37 @@ class MatchH2HInfo {
   bool get hasHistory => meetings.isNotEmpty;
 
   factory MatchH2HInfo.fromJson(Map<String, dynamic> json) {
-    final meetings = _extractMeetings(json).map(MatchH2HMeeting.fromJson).toList();
-    final homeWins = _intValue(json, ['home_wins', 'homeWins']) ?? _computeWins(meetings, true);
-    final awayWins = _intValue(json, ['away_wins', 'awayWins']) ?? _computeWins(meetings, false);
-    final draws = _intValue(json, ['draws', 'drawCount']) ?? _computeDraws(meetings);
-    final totalGoalsHome = _intValue(json, ['home_goals', 'total_goals_home', 'goals_home']) ?? _computeGoals(meetings, true);
-    final totalGoalsAway = _intValue(json, ['away_goals', 'total_goals_away', 'goals_away']) ?? _computeGoals(meetings, false);
+    final meetings = _extractMeetings(
+      json,
+    ).map(MatchH2HMeeting.fromJson).toList();
+    final homeWins =
+        _intValue(json, ['home_wins', 'homeWins']) ??
+        _computeWins(meetings, true);
+    final awayWins =
+        _intValue(json, ['away_wins', 'awayWins']) ??
+        _computeWins(meetings, false);
+    final draws =
+        _intValue(json, ['draws', 'drawCount']) ?? _computeDraws(meetings);
+    final totalGoalsHome =
+        _intValue(json, ['home_goals', 'total_goals_home', 'goals_home']) ??
+        _computeGoals(meetings, true);
+    final totalGoalsAway =
+        _intValue(json, ['away_goals', 'total_goals_away', 'goals_away']) ??
+        _computeGoals(meetings, false);
 
     return MatchH2HInfo(
-      homeTeamId: _toInt(json['home_team_id'] ?? json['team1_id'] ?? json['homeTeamId']),
-      awayTeamId: _toInt(json['away_team_id'] ?? json['team2_id'] ?? json['awayTeamId']),
-      homeTeamName: (json['home_team_name'] ?? json['team1_name'] ?? '')?.toString() ?? '',
-      awayTeamName: (json['away_team_name'] ?? json['team2_name'] ?? '')?.toString() ?? '',
+      homeTeamId: _toInt(
+        json['home_team_id'] ?? json['team1_id'] ?? json['homeTeamId'],
+      ),
+      awayTeamId: _toInt(
+        json['away_team_id'] ?? json['team2_id'] ?? json['awayTeamId'],
+      ),
+      homeTeamName:
+          (json['home_team_name'] ?? json['team1_name'] ?? '')?.toString() ??
+          '',
+      awayTeamName:
+          (json['away_team_name'] ?? json['team2_name'] ?? '')?.toString() ??
+          '',
       homeWins: homeWins,
       awayWins: awayWins,
       draws: draws,
@@ -80,8 +99,11 @@ class MatchH2HInfo {
     );
   }
 
-  static List<Map<String, dynamic>> _extractMeetings(Map<String, dynamic> json) {
-    final raw = json['head2head'] ?? json['h2h'] ?? json['matches'] ?? json['history'];
+  static List<Map<String, dynamic>> _extractMeetings(
+    Map<String, dynamic> json,
+  ) {
+    final raw =
+        json['head2head'] ?? json['h2h'] ?? json['matches'] ?? json['history'];
     if (raw is List) {
       return raw.whereType<Map<String, dynamic>>().toList();
     }
@@ -102,14 +124,18 @@ class MatchH2HInfo {
   static int _computeWins(List<MatchH2HMeeting> meetings, bool homeSide) {
     return meetings.where((match) {
       if (match.homeScore == match.awayScore) return false;
-      return homeSide ? match.homeScore > match.awayScore : match.awayScore > match.homeScore;
+      return homeSide
+          ? match.homeScore > match.awayScore
+          : match.awayScore > match.homeScore;
     }).length;
   }
 
   static int _computeWinsForTeam(List<MatchH2HMeeting> meetings, int teamId) {
     return meetings.where((match) {
       if (match.homeScore == match.awayScore) return false;
-      final winnerId = match.homeScore > match.awayScore ? match.homeTeamId : match.awayTeamId;
+      final winnerId = match.homeScore > match.awayScore
+          ? match.homeTeamId
+          : match.awayTeamId;
       return winnerId == teamId;
     }).length;
   }
@@ -119,7 +145,10 @@ class MatchH2HInfo {
   }
 
   static int _computeGoals(List<MatchH2HMeeting> meetings, bool homeSide) {
-    return meetings.fold<int>(0, (sum, match) => sum + (homeSide ? match.homeScore : match.awayScore));
+    return meetings.fold<int>(
+      0,
+      (sum, match) => sum + (homeSide ? match.homeScore : match.awayScore),
+    );
   }
 
   static int _computeGoalsForTeam(List<MatchH2HMeeting> meetings, int teamId) {
@@ -154,6 +183,7 @@ class MatchH2HInfo {
 class MatchH2HMeeting {
   const MatchH2HMeeting({
     required this.date,
+    required this.leagueName,
     required this.homeTeamId,
     required this.awayTeamId,
     required this.homeTeam,
@@ -167,6 +197,7 @@ class MatchH2HMeeting {
   });
 
   final DateTime date;
+  final String leagueName;
   final int homeTeamId;
   final int awayTeamId;
   final String homeTeam;
@@ -179,21 +210,48 @@ class MatchH2HMeeting {
   final String result;
 
   factory MatchH2HMeeting.fromJson(Map<String, dynamic> json) {
-    final dateString = (json['match_date'] ?? json['date'] ?? json['fixture_date'] ?? '')?.toString() ?? '';
-    final date = DateTime.tryParse(dateString) ?? DateTime.fromMillisecondsSinceEpoch(0);
-    final homeScore = _toInt(json['home_score'] ?? json['score_home'] ?? json['goals_home']);
-    final awayScore = _toInt(json['away_score'] ?? json['score_away'] ?? json['goals_away']);
-    final status = (json['status'] ?? json['match_status'] ?? '')?.toString() ?? '';
-    final statusShort = (json['status_short'] ?? json['match_status_short'] ?? '')?.toString() ?? '';
+    final dateString =
+        (json['match_date'] ?? json['date'] ?? json['fixture_date'] ?? '')
+            ?.toString() ??
+        '';
+    final date =
+        DateTime.tryParse(dateString) ?? DateTime.fromMillisecondsSinceEpoch(0);
+    final homeScore = _toInt(
+      json['home_score'] ?? json['score_home'] ?? json['goals_home'],
+    );
+    final awayScore = _toInt(
+      json['away_score'] ?? json['score_away'] ?? json['goals_away'],
+    );
+    final status =
+        (json['status'] ?? json['match_status'] ?? '')?.toString() ?? '';
+    final statusShort =
+        (json['status_short'] ?? json['match_status_short'] ?? '')
+            ?.toString() ??
+        '';
     final venue = (json['venue'] ?? json['stadium'] ?? '')?.toString() ?? '';
-    final result = (json['result'] ?? json['outcome'] ?? status)?.toString() ?? '';
+    final leagueName =
+        (json['league_name'] ??
+                json['competition_name'] ??
+                json['tournament_name'] ??
+                '')
+            ?.toString() ??
+        '';
+    final result =
+        (json['result'] ?? json['outcome'] ?? status)?.toString() ?? '';
 
     return MatchH2HMeeting(
       date: date,
-      homeTeamId: _toInt(json['home_team_id'] ?? json['team1_id'] ?? json['homeTeamId']),
-      awayTeamId: _toInt(json['away_team_id'] ?? json['team2_id'] ?? json['awayTeamId']),
-      homeTeam: (json['home_team'] ?? json['team1_name'] ?? '')?.toString() ?? '',
-      awayTeam: (json['away_team'] ?? json['team2_name'] ?? '')?.toString() ?? '',
+      leagueName: leagueName,
+      homeTeamId: _toInt(
+        json['home_team_id'] ?? json['team1_id'] ?? json['homeTeamId'],
+      ),
+      awayTeamId: _toInt(
+        json['away_team_id'] ?? json['team2_id'] ?? json['awayTeamId'],
+      ),
+      homeTeam:
+          (json['home_team'] ?? json['team1_name'] ?? '')?.toString() ?? '',
+      awayTeam:
+          (json['away_team'] ?? json['team2_name'] ?? '')?.toString() ?? '',
       homeScore: homeScore,
       awayScore: awayScore,
       status: status,
@@ -210,22 +268,29 @@ class MatchH2HMeeting {
     final homeInfo = (teamInfo['home'] as Map<String, dynamic>?) ?? {};
     final awayInfo = (teamInfo['away'] as Map<String, dynamic>?) ?? {};
     final goals = (json['goals'] as Map<String, dynamic>?) ?? {};
+    final league = (json['league'] as Map<String, dynamic>?) ?? {};
 
     final dateString = (fixture['date'] ?? '')?.toString() ?? '';
-    final date = DateTime.tryParse(dateString) ?? DateTime.fromMillisecondsSinceEpoch(0);
+    final date =
+        DateTime.tryParse(dateString) ?? DateTime.fromMillisecondsSinceEpoch(0);
     final homeScore = _toInt(goals['home']);
     final awayScore = _toInt(goals['away']);
     final homeTeamId = _toInt(homeInfo['id']);
     final awayTeamId = _toInt(awayInfo['id']);
-    final homeTeamName = (homeInfo['name'] ?? homeInfo['teamName'] ?? '')?.toString() ?? '';
-    final awayTeamName = (awayInfo['name'] ?? awayInfo['teamName'] ?? '')?.toString() ?? '';
+    final homeTeamName =
+        (homeInfo['name'] ?? homeInfo['teamName'] ?? '')?.toString() ?? '';
+    final awayTeamName =
+        (awayInfo['name'] ?? awayInfo['teamName'] ?? '')?.toString() ?? '';
     final statusShort = (statusInfo['short'] ?? '')?.toString() ?? '';
     final statusLong = (statusInfo['long'] ?? '')?.toString() ?? '';
-    final venue = (fixture['venue'] as Map<String, dynamic>?)?['name']?.toString() ?? '';
+    final leagueName = (league['name'] ?? '')?.toString() ?? '';
+    final venue =
+        (fixture['venue'] as Map<String, dynamic>?)?['name']?.toString() ?? '';
     final result = statusLong.isNotEmpty ? statusLong : statusShort;
 
     return MatchH2HMeeting(
       date: date,
+      leagueName: leagueName,
       homeTeamId: homeTeamId,
       awayTeamId: awayTeamId,
       homeTeam: homeTeamName,

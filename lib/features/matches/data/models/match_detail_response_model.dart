@@ -22,6 +22,8 @@ class MatchDetailResponseModel {
     required this.awayTeamLogo,
     required this.homeScore,
     required this.awayScore,
+    this.hasEvents = false,
+    this.hasStats = false,
     this.hasLineups = false,
     this.hasOdds = false,
     this.hasH2H = false,
@@ -52,6 +54,8 @@ class MatchDetailResponseModel {
   final String awayTeamLogo;
   final int homeScore;
   final int awayScore;
+  final bool hasEvents;
+  final bool hasStats;
   final bool hasLineups;
   final bool hasOdds;
   final bool hasH2H;
@@ -108,6 +112,8 @@ class MatchDetailResponseModel {
           json['away_score'] as int? ??
           int.tryParse(json['away_score']?.toString() ?? '') ??
           0,
+        hasEvents: _parseBool(json, 'has_events'),
+        hasStats: _parseBool(json, 'has_stats'),
       hasLineups: _parseBool(json, 'has_lineups'),
       hasOdds: _parseBool(json, 'has_odds'),
       hasH2H: _parseBool(json, 'has_h2h'),
@@ -141,6 +147,8 @@ class MatchDetailResponseModel {
       awayTeamLogo: awayTeamLogo,
       homeScore: homeScore,
       awayScore: awayScore,
+      hasEvents: hasEvents,
+      hasStats: hasStats,
       hasLineups: hasLineups,
       hasOdds: hasOdds,
       hasH2H: hasH2H,

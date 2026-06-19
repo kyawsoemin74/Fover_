@@ -4,11 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:fover/features/matches/domain/models/match_detail_model.dart';
 import 'package:fover/features/matches/providers/match_detail_provider.dart';
 import 'package:fover/features/matches/providers/match_detail_state.dart';
-import 'package:fover/features/matches/providers/match_events_provider.dart';
 import 'package:fover/features/matches/providers/match_h2h_provider.dart';
 import 'package:fover/features/matches/providers/match_lineup_provider.dart';
 import 'package:fover/features/matches/providers/match_odds_provider.dart';
-import 'package:fover/features/matches/providers/match_stats_provider.dart';
 import 'package:fover/features/matches/presentation/sections/match_detail_details_section.dart';
 import 'package:fover/features/matches/presentation/sections/match_detail_h2h_section.dart';
 import 'package:fover/features/matches/presentation/sections/match_detail_lineup_section.dart';
@@ -85,13 +83,12 @@ class _MatchDetailPageState extends ConsumerState<MatchDetailPage> {
   @override
   void initState() {
     super.initState();
+    print('MatchDetailPage.initState matchId=${widget.matchId}');
     Future.microtask(_loadInitialTabData);
   }
 
   void _loadInitialTabData() {
     if (widget.matchId <= 0) return;
-    ref.read(matchEventsProvider(widget.matchId).notifier).loadEvents();
-    ref.read(matchStatsProvider(widget.matchId).notifier).loadStats();
   }
 
   void _onTabSelected(MatchDetailTab tab) {
@@ -107,8 +104,6 @@ class _MatchDetailPageState extends ConsumerState<MatchDetailPage> {
 
     switch (tab) {
       case MatchDetailTab.details:
-        ref.read(matchEventsProvider(widget.matchId).notifier).loadEvents();
-        ref.read(matchStatsProvider(widget.matchId).notifier).loadStats();
         break;
       case MatchDetailTab.odds:
         ref.read(matchOddsProvider(widget.matchId).notifier).loadOdds();
@@ -250,6 +245,7 @@ class _MatchDetailPageState extends ConsumerState<MatchDetailPage> {
 
   @override
   Widget build(BuildContext context) {
+    print('MatchDetailPage.build matchId=${widget.matchId}');
     if (widget.matchId <= 0) {
       return Scaffold(
         backgroundColor: Colors.black,

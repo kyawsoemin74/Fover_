@@ -21,7 +21,7 @@ class MatchDetailLineupSection extends ConsumerWidget {
       return _SectionError(
         message: state.errorMessage,
         onRetry: () =>
-            ref.read(matchLineupProvider(matchId).notifier).loadLineup(),
+            ref.read(matchLineupProvider(matchId).notifier).loadLineup(forceRefresh: true),
       );
     }
 
@@ -35,8 +35,6 @@ class MatchDetailLineupSection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const _SectionHeading(title: 'Lineups & Formations'),
-        const SizedBox(height: 12),
         _LineupPitchBoard(
           homeTeamName: lineup.home.teamName,
           homeFormation: lineup.home.formation,
@@ -45,26 +43,23 @@ class MatchDetailLineupSection extends ConsumerWidget {
           awayFormation: lineup.away.formation,
           awayPlayers: lineup.away.startingXI,
         ),
+        const SizedBox(height: 14),
+        const _SectionHeading(title: 'Coach'),
+        const SizedBox(height: 8),
+        _CoachComparisonRow(
+          homeTeamName: lineup.home.teamName,
+          homeCoachName: lineup.home.coach,
+          homeCoachPhotoUrl: lineup.home.coachPhotoUrl,
+          awayTeamName: lineup.away.teamName,
+          awayCoachName: lineup.away.coach,
+          awayCoachPhotoUrl: lineup.away.coachPhotoUrl,
+        ),
         const SizedBox(height: 18),
-        const _SectionHeading(title: 'Substitutes lineup'),
-        const SizedBox(height: 10),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: _SubstituteList(
-                teamName: lineup.home.teamName,
-                players: lineup.home.substitutes,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _SubstituteList(
-                teamName: lineup.away.teamName,
-                players: lineup.away.substitutes,
-              ),
-            ),
-          ],
+        const _SectionHeading(title: 'Bench'),
+        const SizedBox(height: 8),
+        _BenchComparisonList(
+          homePlayers: lineup.home.substitutes,
+          awayPlayers: lineup.away.substitutes,
         ),
       ],
     );
@@ -133,10 +128,12 @@ class _LineupPitchBoard extends StatelessWidget {
         final name = player.name as String? ?? '';
         final number = player.number?.toString();
         final photoUrl = player.photoUrl as String?;
+        final isCaptain = player.isCaptain == true;
         return _PlayerCard(
           name: name,
           number: number,
           photoUrl: photoUrl,
+          isCaptain: isCaptain,
         );
       }).toList();
 
@@ -214,10 +211,12 @@ class _LineupPitchBoard extends StatelessWidget {
         final name = player.name as String? ?? '';
         final number = player.number?.toString();
         final photoUrl = player.photoUrl as String?;
+        final isCaptain = player.isCaptain == true;
         return _PlayerCard(
           name: name,
           number: number,
           photoUrl: photoUrl,
+          isCaptain: isCaptain,
         );
       }).toList();
 
@@ -252,56 +251,23 @@ class _LineupPitchBoard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      homeTeamName,
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      homeFormation.isNotEmpty ? homeFormation : 'TBD',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: Colors.white54,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      awayTeamName,
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      awayFormation.isNotEmpty ? awayFormation : 'TBD',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: Colors.white54,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          Text(
+            homeTeamName,
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            homeFormation.isNotEmpty ? homeFormation : 'TBD',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: Colors.white54,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 10),
           Container(
@@ -328,6 +294,27 @@ class _LineupPitchBoard extends StatelessWidget {
                 ),
               ],
             ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            awayFormation.isNotEmpty ? awayFormation : 'TBD',
+            textAlign: TextAlign.right,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: Colors.white54,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            awayTeamName,
+            textAlign: TextAlign.right,
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
@@ -362,14 +349,18 @@ class _PlayerAvatar extends StatelessWidget {
 }
 
 class _PlayerName extends StatelessWidget {
-  const _PlayerName({required this.name});
+  const _PlayerName({required this.name, this.isCaptain = false});
 
   final String name;
+  final bool isCaptain;
 
   @override
   Widget build(BuildContext context) {
+    final formatted = formatPlayerName(name);
+    final label = isCaptain ? '(C) $formatted' : formatted;
+
     return Text(
-      formatPlayerName(name),
+      label,
       style: Theme.of(context).textTheme.bodySmall?.copyWith(
             color: Colors.white70,
             fontWeight: FontWeight.w600,
@@ -386,11 +377,13 @@ class _PlayerCard extends StatelessWidget {
     required this.name,
     this.number,
     this.photoUrl,
+    this.isCaptain = false,
   });
 
   final String name;
   final String? number;
   final String? photoUrl;
+  final bool isCaptain;
 
   @override
   Widget build(BuildContext context) {
@@ -411,7 +404,130 @@ class _PlayerCard extends StatelessWidget {
           ),
         ],
         const SizedBox(height: 4),
-        _PlayerName(name: name),
+        _PlayerName(name: name, isCaptain: isCaptain),
+      ],
+    );
+  }
+}
+
+class _CoachComparisonRow extends StatelessWidget {
+  const _CoachComparisonRow({
+    required this.homeTeamName,
+    required this.homeCoachName,
+    required this.homeCoachPhotoUrl,
+    required this.awayTeamName,
+    required this.awayCoachName,
+    required this.awayCoachPhotoUrl,
+  });
+
+  final String homeTeamName;
+  final String homeCoachName;
+  final String? homeCoachPhotoUrl;
+  final String awayTeamName;
+  final String awayCoachName;
+  final String? awayCoachPhotoUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFF111827),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _CoachCompactSide(
+              teamName: homeTeamName,
+              coachName: homeCoachName,
+              photoUrl: homeCoachPhotoUrl,
+              textAlign: TextAlign.left,
+              isHome: true,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: _CoachCompactSide(
+              teamName: awayTeamName,
+              coachName: awayCoachName,
+              photoUrl: awayCoachPhotoUrl,
+              textAlign: TextAlign.right,
+              isHome: false,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CoachCompactSide extends StatelessWidget {
+  const _CoachCompactSide({
+    required this.teamName,
+    required this.coachName,
+    required this.photoUrl,
+    required this.textAlign,
+    required this.isHome,
+  });
+
+  final String teamName;
+  final String coachName;
+  final String? photoUrl;
+  final TextAlign textAlign;
+  final bool isHome;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final name = coachName.isNotEmpty ? coachName : '-';
+
+    final identity = Expanded(
+      child: Column(
+        crossAxisAlignment: isHome ? CrossAxisAlignment.start : CrossAxisAlignment.end,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: textAlign,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            teamName,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: textAlign,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: Colors.white54,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+
+    final avatar = CircleAvatar(
+      radius: 18,
+      backgroundColor: const Color(0xFF0F172A),
+      backgroundImage: photoUrl?.isNotEmpty == true ? NetworkImage(photoUrl!) : null,
+      child: photoUrl?.isNotEmpty == true
+          ? null
+          : const Icon(Icons.person, color: Colors.white70, size: 16),
+    );
+
+    return Row(
+      children: [
+        if (isHome) avatar,
+        if (isHome) const SizedBox(width: 8),
+        identity,
+        if (!isHome) const SizedBox(width: 8),
+        if (!isHome) avatar,
       ],
     );
   }
@@ -443,59 +559,140 @@ class _PitchPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-class _SubstituteList extends StatelessWidget {
-  const _SubstituteList({required this.teamName, required this.players});
+class _BenchComparisonList extends StatelessWidget {
+  const _BenchComparisonList({
+    required this.homePlayers,
+    required this.awayPlayers,
+  });
 
-  final String teamName;
-  final List<dynamic> players;
+  final List<dynamic> homePlayers;
+  final List<dynamic> awayPlayers;
 
   @override
   Widget build(BuildContext context) {
+    final maxRows = homePlayers.length > awayPlayers.length
+        ? homePlayers.length
+        : awayPlayers.length;
+
+    if (maxRows == 0) {
+      return const _SectionPlaceholder(message: 'No bench data available.');
+    }
+
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
         color: const Color(0xFF111827),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        children: List.generate(maxRows, (index) {
+          final homePlayer = index < homePlayers.length ? homePlayers[index] : null;
+          final awayPlayer = index < awayPlayers.length ? awayPlayers[index] : null;
+
+          return Container(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            decoration: BoxDecoration(
+              border: index == maxRows - 1
+                  ? null
+                  : const Border(
+                      bottom: BorderSide(color: Colors.white12, width: 0.6),
+                    ),
+            ),
+            child: Row(
+              children: [
+                Expanded(child: _BenchSide(player: homePlayer, isHome: true)),
+                const SizedBox(width: 10),
+                Expanded(child: _BenchSide(player: awayPlayer, isHome: false)),
+              ],
+            ),
+          );
+        }),
+      ),
+    );
+  }
+}
+
+class _BenchSide extends StatelessWidget {
+  const _BenchSide({required this.player, required this.isHome});
+
+  final dynamic player;
+  final bool isHome;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final textAlign = isHome ? TextAlign.left : TextAlign.right;
+    final rowAlign = isHome ? CrossAxisAlignment.start : CrossAxisAlignment.end;
+
+    final name = player?.name as String? ?? '-';
+    final number = player?.number?.toString();
+    final position = _toCompactPosition(player?.position as String? ?? '');
+    final isCaptain = player?.isCaptain == true;
+    final photoUrl = player?.photoUrl as String?;
+    final displayName = isCaptain ? '(C) ${formatPlayerName(name)}' : formatPlayerName(name);
+    final meta = '#${number?.trim().isNotEmpty == true ? number!.trim() : '-'} • $position';
+
+    final identity = Expanded(
+      child: Column(
+        crossAxisAlignment: rowAlign,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            teamName,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.white70,
-                  fontWeight: FontWeight.w700,
-                ),
+            displayName,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: textAlign,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+            ),
           ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: players.map((player) {
-              final name = player.name as String? ?? '';
-              final number = player.number?.toString();
-              final photoUrl = player.photoUrl as String?;
-              return SizedBox(
-                width: 120,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF0D1F2E),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: _PlayerCard(
-                    name: name,
-                    number: number,
-                    photoUrl: photoUrl,
-                  ),
-                ),
-              );
-            }).toList(),
+          const SizedBox(height: 2),
+          Text(
+            meta,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: textAlign,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: Colors.white54,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),
     );
+
+    final avatar = CircleAvatar(
+      radius: 16,
+      backgroundColor: const Color(0xFF0F172A),
+      backgroundImage: photoUrl?.isNotEmpty == true ? NetworkImage(photoUrl!) : null,
+      child: photoUrl?.isNotEmpty == true
+          ? null
+          : const Icon(Icons.person, color: Colors.white70, size: 14),
+    );
+
+    return Row(
+      children: [
+        if (isHome) avatar,
+        if (isHome) const SizedBox(width: 8),
+        identity,
+        if (!isHome) const SizedBox(width: 8),
+        if (!isHome) avatar,
+      ],
+    );
   }
+}
+
+String _toCompactPosition(String rawPosition) {
+  final value = rawPosition.trim().toUpperCase();
+  if (value.isEmpty) return '-';
+
+  if (value == 'G' || value == 'GK' || value.contains('GOALKEEPER')) return 'GK';
+  if (value == 'D' || value == 'DF' || value == 'DEF' || value.contains('DEF')) return 'DF';
+  if (value == 'M' || value == 'MF' || value == 'MID' || value.contains('MID')) return 'MF';
+  if (value == 'F' || value == 'FW' || value == 'ST' || value.contains('FOR')) return 'FW';
+
+  return value.length > 3 ? value.substring(0, 3) : value;
 }
 
 class _SectionHeading extends StatelessWidget {

@@ -11,8 +11,13 @@ import 'package:fover/features/navigation/presentation/more_page.dart';
 class AppRouter {
   AppRouter._();
 
+  static const String _initialLocation = String.fromEnvironment(
+    'FOOVER_INITIAL_ROUTE',
+    defaultValue: '/',
+  );
+
   static final router = GoRouter(
-    initialLocation: '/',
+    initialLocation: _initialLocation,
     routes: [
       ShellRoute(
         builder: (context, state, child) => BottomNavPage(child: child),

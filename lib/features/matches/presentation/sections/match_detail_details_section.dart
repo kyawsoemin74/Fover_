@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:fover/features/matches/domain/models/match_detail_model.dart';
 import 'package:fover/features/matches/domain/models/match_event_model.dart';
 import 'package:fover/features/matches/presentation/sections/match_detail_stats_section.dart';
 import 'package:fover/features/matches/presentation/widgets/match_prediction_card.dart';
 import 'package:fover/features/matches/providers/match_events_provider.dart';
 import 'package:fover/features/matches/providers/match_detail_provider.dart';
+import 'package:fover/features/matches/providers/match_stats_provider.dart';
 
-class MatchDetailDetailsSection extends ConsumerWidget {
+class MatchDetailDetailsSection extends ConsumerStatefulWidget {
   const MatchDetailDetailsSection({
     super.key,
     required this.matchId,
@@ -19,12 +21,47 @@ class MatchDetailDetailsSection extends ConsumerWidget {
   final int awayTeamId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(matchEventsProvider(matchId));
+  ConsumerState<MatchDetailDetailsSection> createState() =>
+      _MatchDetailDetailsSectionState();
+}
 
-    // Use match detail for scores/status to generate HT/FT dividers
-    final matchState = ref.watch(matchDetailProvider(matchId));
+class _MatchDetailDetailsSectionState
+    extends ConsumerState<MatchDetailDetailsSection> {
+  var _requestedEvents = false;
+  var _requestedStats = false;
+
+  void _maybeRequestSecondaryLoads(MatchDetailInfo? matchInfo) {
+    if (matchInfo == null) return;
+
+    if (matchInfo.hasEvents && !_requestedEvents) {
+      _requestedEvents = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ref.read(matchEventsProvider(widget.matchId).notifier).loadEvents();
+      });
+    }
+
+    if (matchInfo.hasStats && !_requestedStats) {
+      _requestedStats = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ref.read(matchStatsProvider(widget.matchId).notifier).loadStats();
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final matchState = ref.watch(matchDetailProvider(widget.matchId));
     final matchInfo = matchState.matchDetail;
+    _maybeRequestSecondaryLoads(matchInfo);
+
+    final showEvents = matchInfo?.hasEvents == true;
+    final showStatistics = matchInfo?.hasStats == true;
+
+    final state = showEvents
+        ? ref.watch(matchEventsProvider(widget.matchId))
+        : const MatchEventsState();
 
     final events = state.status == MatchEventsStatus.loaded
         ? state.events
@@ -78,9 +115,9 @@ class MatchDetailDetailsSection extends ConsumerWidget {
           e.type == MatchEventType.ownGoal ||
           e.type == MatchEventType.penalty;
       if (isGoalEvent) {
-        if (e.teamId == homeTeamId) {
+        if (e.teamId == widget.homeTeamId) {
           homeScore++;
-        } else if (e.teamId == awayTeamId) {
+        } else if (e.teamId == widget.awayTeamId) {
           awayScore++;
         }
         scoreSnapshot = '$homeScore-$awayScore';
@@ -108,13 +145,12 @@ class MatchDetailDetailsSection extends ConsumerWidget {
       matchInfo?.venueCity,
     ].where((entry) => entry != null && entry.trim().isNotEmpty).join(', ');
     final locationText = matchInfo?.venueCity?.trim() ?? '';
-    final showStatistics = matchInfo != null && !_isPreMatchStatus(matchInfo.status);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (showStatistics) ...[
-          MatchDetailStatsSection(matchId: matchId),
+          MatchDetailStatsSection(matchId: widget.matchId),
           const SizedBox(height: 16),
         ],
         if (showTimeline) ...[
@@ -140,8 +176,8 @@ class MatchDetailDetailsSection extends ConsumerWidget {
                   final ev = it.event!;
                   return _FotMobRow(
                     event: ev,
-                    homeTeamId: homeTeamId,
-                    awayTeamId: awayTeamId,
+                    homeTeamId: widget.homeTeamId,
+                    awayTeamId: widget.awayTeamId,
                     score: it.score,
                   );
                 }),
@@ -185,14 +221,6 @@ class MatchDetailDetailsSection extends ConsumerWidget {
       ],
     );
   }
-}
-
-bool _isPreMatchStatus(String status) {
-  final normalized = status.trim().toUpperCase();
-  return normalized == 'NS' ||
-      normalized == 'TBD' ||
-      normalized == 'NOT STARTED' ||
-      normalized == 'NOT_STARTED';
 }
 
 class MatchDetailSectionHeader extends StatelessWidget {

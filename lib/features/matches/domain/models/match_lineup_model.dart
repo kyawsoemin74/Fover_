@@ -23,6 +23,8 @@ class MatchTeamLineup {
     required this.teamId,
     required this.teamName,
     required this.coach,
+    this.coachId,
+    this.coachPhotoUrl,
     required this.formation,
     required this.startingXI,
     required this.substitutes,
@@ -31,15 +33,43 @@ class MatchTeamLineup {
   final int? teamId;
   final String teamName;
   final String coach;
+  final int? coachId;
+  final String? coachPhotoUrl;
   final String formation;
   final List<MatchLineupPlayer> startingXI;
   final List<MatchLineupPlayer> substitutes;
 
   factory MatchTeamLineup.fromJson(Map<String, dynamic> json) {
+    final team = json['team'] as Map<String, dynamic>? ?? {};
+    final coachRaw = json['coach'];
+    final coachMap = coachRaw is Map<String, dynamic> ? coachRaw : const <String, dynamic>{};
+
+    String parseCoachName() {
+      if (coachMap.isNotEmpty) {
+        final nested = coachMap['name']?.toString().trim();
+        if (nested != null && nested.isNotEmpty) return nested;
+      }
+
+      if (coachRaw is String) {
+        final direct = coachRaw.trim();
+        if (direct.isNotEmpty) return direct;
+      }
+
+      final coachName = json['coach_name']?.toString().trim();
+      if (coachName != null && coachName.isNotEmpty) return coachName;
+
+      final manager = json['manager']?.toString().trim();
+      if (manager != null && manager.isNotEmpty) return manager;
+
+      return '';
+    }
+
     return MatchTeamLineup(
-      teamId: _toInt(json['team_id'] ?? json['id']),
-      teamName: (json['team_name'] ?? json['name'] ?? '')?.toString() ?? '',
-      coach: (json['coach'] ?? json['manager'] ?? '')?.toString() ?? '',
+      teamId: _toInt(json['team_id'] ?? json['id'] ?? team['id'] ?? team['team_id']),
+      teamName: (json['team_name'] ?? json['name'] ?? team['name'] ?? team['team_name'] ?? '')?.toString() ?? '',
+      coach: parseCoachName(),
+      coachId: _toInt(coachMap['id'] ?? json['coach_id']),
+      coachPhotoUrl: (coachMap['photo'] ?? json['coach_photo'] ?? json['manager_photo'])?.toString(),
       formation: (json['formation'] ?? '')?.toString() ?? '',
       startingXI: _parsePlayers(json['startXI'] ?? json['starting_xi'] ?? json['lineup'] ?? json['starting_lineup']),
       substitutes: _parsePlayers(json['substitutes'] ?? json['subs'] ?? json['bench']),
@@ -95,10 +125,20 @@ class MatchLineupPlayer {
       name: (player['player'] ?? player['player_name'] ?? player['name'] ?? '')?.toString() ?? '',
       number: _parseJersey(player['number'] ?? player['jersey'] ?? player['shirt_number'] ?? player['shirt']),
       position: (player['pos'] ?? player['position'] ?? player['role'] ?? '')?.toString() ?? '',
-      isCaptain: (player['captain'] ?? player['is_captain'] ?? false) == true,
+      isCaptain: _parseBool(player['captain'] ?? player['is_captain'] ?? player['isCaptain']),
       photoUrl: (player['photo'] ?? player['photo_url'] ?? player['image'])?.toString(),
       grid: (player['grid'] ?? player['grid_position'] ?? player['gridPosition'])?.toString(),
     );
+  }
+
+  static bool _parseBool(dynamic value) {
+    if (value is bool) return value;
+    if (value is num) return value != 0;
+    if (value is String) {
+      final normalized = value.trim().toLowerCase();
+      return normalized == 'true' || normalized == '1' || normalized == 'yes';
+    }
+    return false;
   }
 
   static int? _parseJersey(dynamic value) {

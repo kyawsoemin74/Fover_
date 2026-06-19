@@ -4,6 +4,10 @@ class StandingResponseModel {
   StandingResponseModel({
     required this.leagueId,
     required this.season,
+    this.groupName,
+    this.description,
+    this.status,
+    this.form,
     required this.position,
     required this.teamId,
     required this.teamName,
@@ -20,6 +24,10 @@ class StandingResponseModel {
 
   final int leagueId;
   final String season;
+  final String? groupName;
+  final String? description;
+  final String? status;
+  final String? form;
   final int position;
   final int teamId;
   final String teamName;
@@ -37,6 +45,10 @@ class StandingResponseModel {
     return StandingResponseModel(
       leagueId: _parseInt(json['league_id']),
       season: json['season']?.toString() ?? '',
+      groupName: json['group_name']?.toString(),
+      description: json['description']?.toString(),
+      status: json['status']?.toString(),
+      form: json['form']?.toString(),
       position: _parseInt(json['position']),
       teamId: _parseInt(json['team_id']),
       teamName: json['team_name']?.toString() ?? '',
@@ -56,6 +68,10 @@ class StandingResponseModel {
     return StandingInfo(
       leagueId: leagueId,
       season: season,
+      groupName: groupName,
+      description: description,
+      status: status,
+      form: form,
       position: position,
       teamId: teamId,
       teamName: teamName,

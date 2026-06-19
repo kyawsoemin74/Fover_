@@ -5,6 +5,13 @@ import 'package:fover/features/matches/providers/match_odds_provider.dart';
 class MatchDetailOddsSection extends ConsumerWidget {
   const MatchDetailOddsSection({super.key, required this.matchId});
 
+  static const double _cardRadius = 16;
+  static const double _cardPadding = 10;
+  static const double _marketSpacing = 10;
+  static const double _itemSpacing = 6;
+  static const String _myanmarBodyTitle = 'မြန်မာကြေး-ဘော်ဒီ';
+  static const String _myanmarGoalsTitle = 'မြန်မာကြေး-ဂိုးပေါင်း';
+
   final int matchId;
 
   @override
@@ -20,7 +27,9 @@ class MatchDetailOddsSection extends ConsumerWidget {
     if (state.status == MatchOddsStatus.error) {
       return _SectionError(
         message: state.errorMessage,
-        onRetry: () => ref.read(matchOddsProvider(matchId).notifier).loadOdds(),
+        onRetry: () => ref
+            .read(matchOddsProvider(matchId).notifier)
+            .loadOdds(forceRefresh: true),
       );
     }
 
@@ -31,41 +40,38 @@ class MatchDetailOddsSection extends ConsumerWidget {
       );
     }
 
+    final bookmaker = _resolveBookmakerLabel(odds);
     final grouped = _groupByMarket(odds);
-    final entries = grouped.entries.toList();
+    final entries = _buildDisplayEntries(grouped, odds);
 
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(_cardPadding),
       decoration: BoxDecoration(
         color: const Color(0xFF0B1124),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(_cardRadius),
         border: Border.all(color: Colors.white12),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.35), blurRadius: 12, offset: const Offset(0, 6)),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const _SectionHeading(title: ''),
-          const SizedBox(height: 12),
+          _BookmakerHeader(title: bookmaker),
+          const SizedBox(height: 8),
           ...entries.asMap().entries.map((pair) {
             final idx = pair.key;
             final entry = pair.value;
             final items = entry.value;
             return Padding(
-              padding: const EdgeInsets.only(bottom: 6),
+              padding: const EdgeInsets.only(bottom: _itemSpacing),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 8),
-                  _SectionHeading(title: entry.key),
-                  const SizedBox(height: 8),
-                  _OddsMarketRow(items: items),
+                  _MarketHeading(title: entry.key),
+                  const SizedBox(height: 4),
+                  const Divider(color: Colors.white12, height: 1, thickness: 0.7),
+                  const SizedBox(height: 6),
+                  _buildMarketContent(entry.key, items),
                   if (idx < entries.length - 1) ...[
-                    const SizedBox(height: 12),
-                    Divider(color: Colors.white12, height: 1),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: _marketSpacing),
                   ],
                 ],
               ),
@@ -74,6 +80,22 @@ class MatchDetailOddsSection extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  String _resolveBookmakerLabel(List<dynamic> oddsList) {
+    final names = <String>{};
+    for (final raw in oddsList) {
+      if (raw is Map<String, dynamic>) {
+        final value = raw['bookmaker']?.toString().trim();
+        if (value != null && value.isNotEmpty) {
+          names.add(value);
+        }
+      }
+    }
+
+    if (names.isEmpty) return 'Bookmaker';
+    if (names.length == 1) return names.first;
+    return '${names.first} +${names.length - 1}';
   }
 
   Map<String, List<Map<String, String>>> _groupByMarket(List<dynamic> oddsList) {
@@ -120,6 +142,99 @@ class MatchDetailOddsSection extends ConsumerWidget {
     return grouped;
   }
 
+  List<MapEntry<String, List<Map<String, String>>>> _buildDisplayEntries(
+    Map<String, List<Map<String, String>>> grouped,
+    List<dynamic> oddsList,
+  ) {
+    final output = <MapEntry<String, List<Map<String, String>>>>[];
+
+    void addMarket(String title) {
+      final items = grouped[title];
+      if (items != null && items.isNotEmpty) {
+        output.add(MapEntry(title, items));
+      }
+    }
+
+    addMarket('Match Winner');
+
+    final myanmarBodyItems = _extractMyanmarOdds(
+      oddsList: oddsList,
+      sourceMarket: 'Asian Handicap',
+      keepSelection: false,
+    );
+    if (myanmarBodyItems.isNotEmpty) {
+      output.add(MapEntry(_myanmarBodyTitle, myanmarBodyItems));
+    }
+
+    addMarket('Asian Handicap');
+
+    final myanmarGoalsItems = _extractMyanmarOdds(
+      oddsList: oddsList,
+      sourceMarket: 'Goals Over/Under',
+      keepSelection: true,
+    );
+    if (myanmarGoalsItems.isNotEmpty) {
+      output.add(MapEntry(_myanmarGoalsTitle, myanmarGoalsItems));
+    }
+
+    addMarket('Goals Over/Under');
+    addMarket('Corners Over Under');
+
+    final consumed = output.map((e) => e.key).toSet();
+    for (final entry in grouped.entries) {
+      if (!consumed.contains(entry.key)) {
+        output.add(entry);
+      }
+    }
+
+    if (output.isEmpty) {
+      return grouped.entries.toList();
+    }
+
+    return output;
+  }
+
+  List<Map<String, String>> _extractMyanmarOdds({
+    required List<dynamic> oddsList,
+    required String sourceMarket,
+    required bool keepSelection,
+  }) {
+    final items = <Map<String, String>>[];
+    for (final raw in oddsList) {
+      if (raw is! Map<String, dynamic>) {
+        continue;
+      }
+
+      final market = raw['market']?.toString().trim();
+      if (market != sourceMarket) {
+        continue;
+      }
+
+      final myanmarOdd = raw['myanmar_odd']?.toString().trim();
+      if (myanmarOdd == null || myanmarOdd.isEmpty) {
+        continue;
+      }
+
+      final selection = keepSelection
+          ? (raw['selection']?.toString().trim() ?? '')
+          : '';
+
+      items.add({
+        'selection': selection,
+        'odd': myanmarOdd,
+      });
+    }
+
+    return items;
+  }
+
+  Widget _buildMarketContent(String title, List<Map<String, String>> items) {
+    if (title == _myanmarBodyTitle) {
+      return _MyanmarOddsOnlyRow(items: items);
+    }
+    return _OddsMarketRow(items: items);
+  }
+
 }
 
 class _OddsMarketRow extends StatelessWidget {
@@ -132,42 +247,45 @@ class _OddsMarketRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final accent = theme.colorScheme.secondary;
+    final accent = theme.colorScheme.primary;
 
     return Row(
       children: items.map((item) {
         return Expanded(
-          child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 4),
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            decoration: BoxDecoration(
-              color: const Color(0xFF0B1124),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white12),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  item['selection'] ?? '',
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 3),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF111827),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    item['selection'] ?? '',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: Colors.white60,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  item['odd'] ?? '',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: accent,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
+                  const SizedBox(height: 3),
+                  Text(
+                    item['odd'] ?? '',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      color: accent,
+                      fontWeight: FontWeight.w800,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         );
@@ -176,17 +294,76 @@ class _OddsMarketRow extends StatelessWidget {
   }
 }
 
-class _SectionHeading extends StatelessWidget {
-  const _SectionHeading({required this.title});
+class _MyanmarOddsOnlyRow extends StatelessWidget {
+  const _MyanmarOddsOnlyRow({
+    required this.items,
+  });
+
+  final List<Map<String, String>> items;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final accent = theme.colorScheme.primary;
+
+    return Row(
+      children: items.map((item) {
+        return Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 3),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF111827),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                item['odd'] ?? '',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  color: accent,
+                  fontWeight: FontWeight.w800,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+}
+
+class _BookmakerHeader extends StatelessWidget {
+  const _BookmakerHeader({required this.title});
+
   final String title;
 
   @override
   Widget build(BuildContext context) {
     return Text(
       title,
-      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+            color: Colors.white54,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.2,
+          ),
+    );
+  }
+}
+
+class _MarketHeading extends StatelessWidget {
+  const _MarketHeading({required this.title});
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      title,
+      style: Theme.of(context).textTheme.titleSmall?.copyWith(
             color: Colors.white,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w800,
           ),
     );
   }
