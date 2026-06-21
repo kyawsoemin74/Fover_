@@ -23,7 +23,8 @@ class HomeNotifier extends StateNotifier<HomeState> {
 
   final HomeRepository _repository;
   Timer? _liveRefreshTimer;
-  bool _isRefreshing = false;
+  int _requestSequence = 0;
+  final Map<String, List<LeagueInfo>> _dateCache = {};
 
   Future<void> loadMatches() async {
     await _loadMatchesForDate(state.selectedDate);
@@ -49,8 +50,27 @@ class HomeNotifier extends StateNotifier<HomeState> {
 
   Future<void> selectDate(DateTime date) async {
     if (DateUtils.isSameDay(date, state.selectedDate)) return;
-    state = state.copyWith(selectedDate: date, status: HomeStatus.loading, errorMessage: null);
-    await _loadMatchesForDate(date);
+    final requestId = ++_requestSequence;
+    final normalizedDate = _dateKey(date);
+    final cachedLeagues = _dateCache[normalizedDate];
+
+    if (cachedLeagues != null) {
+      state = state.copyWith(
+        selectedDate: date,
+        status: cachedLeagues.isEmpty ? HomeStatus.empty : HomeStatus.loaded,
+        leagues: cachedLeagues,
+        errorMessage: null,
+        isRefreshing: false,
+      );
+      return;
+    }
+
+    state = state.copyWith(
+      selectedDate: date,
+      status: HomeStatus.loading,
+      errorMessage: null,
+    );
+    await _loadMatchesForDate(date, requestId: requestId, setLoading: false);
   }
 
   Future<void> retry() async {
@@ -58,25 +78,39 @@ class HomeNotifier extends StateNotifier<HomeState> {
     await _loadMatchesForDate(state.selectedDate);
   }
 
-  Future<void> _loadMatchesForDate(DateTime date, {bool forceRefresh = false, bool periodic = false}) async {
-    if (_isRefreshing) {
+  Future<void> _loadMatchesForDate(
+    DateTime date, {
+    bool forceRefresh = false,
+    bool periodic = false,
+    int? requestId,
+    bool setLoading = true,
+  }) async {
+    final normalizedDate = _dateKey(date);
+    final activeRequestId = requestId ?? ++_requestSequence;
+
+    if (!forceRefresh) {
+      final cachedLeagues = _dateCache[normalizedDate];
+      if (cachedLeagues != null) {
+        if (_isLatestRequest(activeRequestId)) {
+          _applyLoadedLeagues(cachedLeagues);
+        }
+        return;
+      }
+    }
+
+    if (setLoading && !periodic) {
+      state = state.copyWith(status: HomeStatus.loading, errorMessage: null);
+    }
+
+    final result = await _repository.fetchLeagueMatches(date, forceRefresh: forceRefresh);
+    if (!_isLatestRequest(activeRequestId)) {
       return;
     }
 
-    _isRefreshing = true;
-    try {
-      if (!periodic) {
-        state = state.copyWith(status: HomeStatus.loading, errorMessage: null);
-      }
-
-      final result = await _repository.fetchLeagueMatches(date, forceRefresh: forceRefresh);
-      if (periodic) {
-        _handlePeriodicResult(result);
-      } else {
-        _handleResult(result);
-      }
-    } finally {
-      _isRefreshing = false;
+    if (periodic) {
+      _handlePeriodicResult(result, requestDate: normalizedDate);
+    } else {
+      _handleResult(result, requestDate: normalizedDate);
     }
   }
 
@@ -97,29 +131,21 @@ class HomeNotifier extends StateNotifier<HomeState> {
   }
 
   Future<void> _refreshLiveMatches() async {
-    if (_isRefreshing) {
-      return;
-    }
-
     await _loadMatchesForDate(state.selectedDate, forceRefresh: true, periodic: true);
   }
 
-  void _handlePeriodicResult(ApiResult<List<LeagueInfo>> result) {
+  void _handlePeriodicResult(ApiResult<List<LeagueInfo>> result, {required String requestDate}) {
     if (!result.isSuccess) {
       return;
     }
 
     final leagues = result.data ?? const [];
+    _dateCache[requestDate] = leagues;
     if (!_hasLeagueDataChanged(state.leagues, leagues)) {
       return;
     }
 
-    final nextStatus = leagues.isEmpty ? HomeStatus.empty : HomeStatus.loaded;
-    state = state.copyWith(
-      status: nextStatus,
-      leagues: leagues,
-      isRefreshing: false,
-    );
+    _applyLoadedLeagues(leagues);
   }
 
   bool _hasLeagueDataChanged(List<LeagueInfo> current, List<LeagueInfo> next) {
@@ -151,9 +177,10 @@ class HomeNotifier extends StateNotifier<HomeState> {
     return false;
   }
 
-  void _handleResult(final ApiResult<List<LeagueInfo>> result) {
+  void _handleResult(final ApiResult<List<LeagueInfo>> result, {required String requestDate}) {
     if (result.isSuccess) {
       final leagues = result.data ?? const [];
+      _dateCache[requestDate] = leagues;
       final nextStatus = leagues.isEmpty ? HomeStatus.empty : HomeStatus.loaded;
       state = state.copyWith(
         status: nextStatus,
@@ -167,6 +194,24 @@ class HomeNotifier extends StateNotifier<HomeState> {
         isRefreshing: false,
       );
     }
+  }
+
+  void _applyLoadedLeagues(List<LeagueInfo> leagues) {
+    final nextStatus = leagues.isEmpty ? HomeStatus.empty : HomeStatus.loaded;
+    state = state.copyWith(
+      status: nextStatus,
+      leagues: leagues,
+      isRefreshing: false,
+    );
+  }
+
+  bool _isLatestRequest(int requestId) {
+    return requestId == _requestSequence;
+  }
+
+  String _dateKey(DateTime date) {
+    final normalized = DateUtils.dateOnly(date);
+    return '${normalized.year.toString().padLeft(4, '0')}-${normalized.month.toString().padLeft(2, '0')}-${normalized.day.toString().padLeft(2, '0')}';
   }
 
   @override
