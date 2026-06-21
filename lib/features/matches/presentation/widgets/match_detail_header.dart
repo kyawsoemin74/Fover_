@@ -3,9 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:fover/features/matches/domain/models/match_detail_model.dart';
 
 class MatchDetailHeader extends StatelessWidget {
-  const MatchDetailHeader({super.key, required this.detail});
+  const MatchDetailHeader({
+    super.key,
+    required this.detail,
+    this.onHomeTeamTap,
+    this.onAwayTeamTap,
+  });
 
   final MatchDetailInfo detail;
+  final VoidCallback? onHomeTeamTap;
+  final VoidCallback? onAwayTeamTap;
 
   bool get _isUpcoming => detail.status.toUpperCase() == 'NS';
 
@@ -27,6 +34,7 @@ class MatchDetailHeader extends StatelessWidget {
             child: _TeamPanel(
               name: detail.homeTeam,
               logoUrl: detail.homeTeamLogo,
+              onTap: onHomeTeamTap,
             ),
           ),
           const SizedBox(width: 12),
@@ -45,6 +53,7 @@ class MatchDetailHeader extends StatelessWidget {
             child: _TeamPanel(
               name: detail.awayTeam,
               logoUrl: detail.awayTeamLogo,
+              onTap: onAwayTeamTap,
             ),
           ),
         ],
@@ -57,10 +66,12 @@ class _TeamPanel extends StatelessWidget {
   const _TeamPanel({
     required this.name,
     required this.logoUrl,
+    this.onTap,
   });
 
   final String name;
   final String logoUrl;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -69,24 +80,29 @@ class _TeamPanel extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         ClipOval(
-          child: Container(
-            width: 68,
-            height: 68,
+          child: Material(
             color: const Color(0xFF050B1A),
-            child: logoUrl.isNotEmpty
-                ? CachedNetworkImage(
-                    imageUrl: logoUrl,
-                    fit: BoxFit.cover,
-                    errorWidget: (context, url, error) =>
-                        _TeamInitial(name: name),
-                    placeholder: (context, url) => const Center(
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white24,
-                      ),
-                    ),
-                  )
-                : _TeamInitial(name: name),
+            child: InkWell(
+              onTap: onTap,
+              child: SizedBox(
+                width: 68,
+                height: 68,
+                child: logoUrl.isNotEmpty
+                    ? CachedNetworkImage(
+                        imageUrl: logoUrl,
+                        fit: BoxFit.cover,
+                        errorWidget: (context, url, error) =>
+                            _TeamInitial(name: name),
+                        placeholder: (context, url) => const Center(
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white24,
+                          ),
+                        ),
+                      )
+                    : _TeamInitial(name: name),
+              ),
+            ),
           ),
         ),
         const SizedBox(height: 8),

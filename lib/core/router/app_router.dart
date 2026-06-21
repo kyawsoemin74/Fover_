@@ -7,6 +7,7 @@ import 'package:fover/features/news/presentation/news_detail_page.dart';
 import 'package:fover/features/news/presentation/news_page.dart';
 import 'package:fover/features/navigation/presentation/bottom_nav_page.dart';
 import 'package:fover/features/navigation/presentation/more_page.dart';
+import 'package:fover/features/team/presentation/team_profile_page.dart';
 
 class AppRouter {
   AppRouter._();
@@ -72,6 +73,14 @@ class AppRouter {
             homeTeamId: homeTeamId,
             awayTeamId: awayTeamId,
           );
+        },
+      ),
+      GoRoute(
+        path: '/team/:teamId',
+        name: 'teamProfile',
+        builder: (context, state) {
+          final teamId = int.tryParse(state.pathParameters['teamId'] ?? '') ?? 0;
+          return TeamProfilePage(teamId: teamId);
         },
       ),
     ],

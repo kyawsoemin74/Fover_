@@ -63,11 +63,12 @@ class _MatchDetailDetailsSectionState
         ? ref.watch(matchEventsProvider(widget.matchId))
         : const MatchEventsState();
 
-    final events = state.status == MatchEventsStatus.loaded
-        ? state.events
-        : const <MatchEventInfo>[];
-    final showTimeline = state.status == MatchEventsStatus.loaded &&
-        events.isNotEmpty;
+    final events = state.events;
+    final showTimeline = state.status == MatchEventsStatus.loaded && events.isNotEmpty;
+    final showEventsLoading =
+      state.status == MatchEventsStatus.loading || state.status == MatchEventsStatus.initial;
+    final showEventsEmpty = state.status == MatchEventsStatus.empty;
+    final showEventsError = state.status == MatchEventsStatus.error;
 
     // Sort events by minute and extraMinute
     final sorted = List<MatchEventInfo>.from(events)
@@ -153,7 +154,34 @@ class _MatchDetailDetailsSectionState
           MatchDetailStatsSection(matchId: widget.matchId),
           const SizedBox(height: 16),
         ],
-        if (showTimeline) ...[
+        if (showEventsLoading) ...[
+          const _SectionStatusCard(
+            icon: Icons.timeline_outlined,
+            title: 'Loading events',
+            message: 'Fetching match event timeline.',
+          ),
+          const SizedBox(height: 16),
+        ] else if (showEventsError) ...[
+          _SectionStatusCard(
+            icon: Icons.error_outline,
+            title: 'Events unavailable',
+            message: state.errorMessage ?? 'Unable to load match events.',
+            actionLabel: 'Retry',
+            onAction: () {
+              ref
+                  .read(matchEventsProvider(widget.matchId).notifier)
+                  .loadEvents(forceRefresh: true);
+            },
+          ),
+          const SizedBox(height: 16),
+        ] else if (showEventsEmpty) ...[
+          const _SectionStatusCard(
+            icon: Icons.event_note_outlined,
+            title: 'No events yet',
+            message: 'No match events are available for this game yet.',
+          ),
+          const SizedBox(height: 16),
+        ] else if (showTimeline) ...[
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -288,6 +316,66 @@ class MatchDetailInfoRow extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _SectionStatusCard extends StatelessWidget {
+  const _SectionStatusCard({
+    required this.icon,
+    required this.title,
+    required this.message,
+    this.actionLabel,
+    this.onAction,
+  });
+
+  final IconData icon;
+  final String title;
+  final String message;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0E1220),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Icon(icon, color: Colors.white54, size: 24),
+          const SizedBox(height: 10),
+          Text(
+            title,
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            message,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Colors.white60,
+              height: 1.4,
+            ),
+          ),
+          if (actionLabel != null && onAction != null) ...[
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: OutlinedButton(
+                onPressed: onAction,
+                child: Text(actionLabel!),
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

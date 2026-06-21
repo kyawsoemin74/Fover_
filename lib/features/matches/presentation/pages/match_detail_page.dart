@@ -83,7 +83,6 @@ class _MatchDetailPageState extends ConsumerState<MatchDetailPage> {
   @override
   void initState() {
     super.initState();
-    print('MatchDetailPage.initState matchId=${widget.matchId}');
     Future.microtask(_loadInitialTabData);
   }
 
@@ -193,7 +192,17 @@ class _MatchDetailPageState extends ConsumerState<MatchDetailPage> {
       slivers: [
         SliverPadding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-          sliver: SliverToBoxAdapter(child: MatchDetailHeader(detail: detail)),
+          sliver: SliverToBoxAdapter(
+            child: MatchDetailHeader(
+              detail: detail,
+              onHomeTeamTap: detail.homeTeamId > 0
+                  ? () => context.push('/team/${detail.homeTeamId}')
+                  : null,
+              onAwayTeamTap: detail.awayTeamId > 0
+                  ? () => context.push('/team/${detail.awayTeamId}')
+                  : null,
+            ),
+          ),
         ),
         SliverPadding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -245,7 +254,6 @@ class _MatchDetailPageState extends ConsumerState<MatchDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    print('MatchDetailPage.build matchId=${widget.matchId}');
     if (widget.matchId <= 0) {
       return Scaffold(
         backgroundColor: Colors.black,

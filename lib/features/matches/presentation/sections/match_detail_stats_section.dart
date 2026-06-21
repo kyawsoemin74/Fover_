@@ -12,18 +12,30 @@ class MatchDetailStatsSection extends ConsumerWidget {
     final state = ref.watch(matchStatsProvider(matchId));
     if (state.status == MatchStatsStatus.loading ||
         state.status == MatchStatsStatus.initial) {
-      return const _SectionPlaceholder(message: 'Loading match statistics.');
+      return const _SectionStatusCard(
+        icon: Icons.query_stats_outlined,
+        title: 'Loading statistics',
+        message: 'Fetching match statistics.',
+      );
     }
 
     if (state.status == MatchStatsStatus.error) {
-      return const _SectionPlaceholder(
-        message: 'Statistics data is not available for this match yet.',
+      return _SectionStatusCard(
+        icon: Icons.error_outline,
+        title: 'Statistics unavailable',
+        message: state.errorMessage ?? 'Unable to load match statistics.',
+        actionLabel: 'Retry',
+        onAction: () => ref
+            .read(matchStatsProvider(matchId).notifier)
+            .loadStats(forceRefresh: true),
       );
     }
 
     final stats = state.stats;
-    if (stats == null || !stats.hasData) {
-      return const _SectionPlaceholder(
+    if (state.status == MatchStatsStatus.empty || stats == null || !stats.hasData) {
+      return const _SectionStatusCard(
+        icon: Icons.insert_chart_outlined,
+        title: 'No statistics yet',
         message: 'Statistic data is not available for this match yet.',
       );
     }
@@ -378,22 +390,61 @@ class _CompactComparisonRow extends StatelessWidget {
   }
 }
 
-class _SectionPlaceholder extends StatelessWidget {
-  const _SectionPlaceholder({required this.message});
+class _SectionStatusCard extends StatelessWidget {
+  const _SectionStatusCard({
+    required this.icon,
+    required this.title,
+    required this.message,
+    this.actionLabel,
+    this.onAction,
+  });
 
+  final IconData icon;
+  final String title;
   final String message;
+  final String? actionLabel;
+  final VoidCallback? onAction;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(22),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF111827),
-        borderRadius: BorderRadius.circular(22),
+        color: const Color(0xFF0E1220),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white10),
       ),
-      child: Text(
-        message,
-        style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.white54),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Icon(icon, color: Colors.white54, size: 24),
+          const SizedBox(height: 10),
+          Text(
+            title,
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            message,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Colors.white60,
+              height: 1.4,
+            ),
+          ),
+          if (actionLabel != null && onAction != null) ...[
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: OutlinedButton(
+                onPressed: onAction,
+                child: Text(actionLabel!),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
