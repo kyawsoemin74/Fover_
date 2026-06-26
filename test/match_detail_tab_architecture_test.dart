@@ -3,9 +3,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:fover/core/network/dio_error_mapper.dart';
 import 'package:fover/features/matches/data/models/match_detail_response_model.dart';
 import 'package:fover/features/matches/domain/models/match_detail_model.dart';
+import 'package:fover/features/matches/presentation/pages/match_detail_page.dart';
+import 'package:fover/features/matches/providers/match_detail_provider.dart';
+import 'package:fover/features/matches/providers/match_detail_state.dart';
 import 'package:fover/features/standings/data/models/standing_response_model.dart';
 import 'package:fover/features/standings/domain/models/standing_model.dart';
-import 'package:fover/features/matches/presentation/pages/match_detail_page.dart';
 
 void main() {
   group('Match detail tab architecture', () {
@@ -221,5 +223,42 @@ void main() {
         ]),
       );
     });
+
+    test('stores the selected tab in provider state', () {
+      final notifier = MatchDetailNotifier(_FakeMatchDetailRepository());
+
+      notifier.setSelectedTab(MatchDetailTab.lineups);
+
+      expect(notifier.debugState.selectedTab, MatchDetailTab.lineups);
+    });
+  });
+}
+
+class _FakeMatchDetailRepository implements MatchDetailRepository {
+  @override
+  Future<ApiResult<MatchDetailInfo>> fetchMatchDetail(int matchId) async {
+    return ApiResult.success(null);
+  }
+
+  @override
+  Future<ApiResult<List<dynamic>>> fetchMatchEvents(int matchId) async {
+    return ApiResult.success([]);
+  }
+
+  @override
+  Future<ApiResult<dynamic>> fetchMatchLineup(int matchId) async {
+    return ApiResult.success(null);
+  }
+
+  @override
+  Future<ApiResult<dynamic>> fetchMatchOdds(int matchId) async {
+    return ApiResult.success(null);
+  }
+
+  @override
+  Future<ApiResult<dynamic>> fetchMatchStats(int matchId) async {
+    return ApiResult.success(null);
+  }
+}
   });
 }

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:fover/features/auth/data/auth_api_service.dart';
 import 'package:fover/features/auth/providers/auth_provider.dart';
 import 'package:fover/features/favorites/providers/favorites_provider.dart';
+import 'package:fover/features/home/providers/date_selection_provider.dart';
 import 'package:fover/features/home/providers/home_provider.dart';
 import 'package:fover/features/home/providers/home_state.dart';
 import 'package:fover/features/home/presentation/widgets/home_section_header.dart';
@@ -23,12 +24,14 @@ class HomePage extends ConsumerStatefulWidget {
 
 class _HomePageState extends ConsumerState<HomePage> {
   late final HomeNotifier _homeNotifier;
+  late final PageController _pageController;
   bool _isSigningIn = false;
 
   @override
   void initState() {
     super.initState();
     _homeNotifier = ref.read(homeProvider.notifier);
+    _pageController = PageController(initialPage: _initialPageIndex());
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _homeNotifier.loadMatches();
@@ -38,6 +41,7 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   @override
   void dispose() {
+    _pageController.dispose();
     _homeNotifier.stopLiveRefresh();
     super.dispose();
   }
@@ -49,6 +53,9 @@ class _HomePageState extends ConsumerState<HomePage> {
     final favoritesState = ref.watch(favoritesProvider);
     final followingCount = ref.watch(followingCountProvider);
     final followingItems = favoritesState.items;
+    final dates = ref.watch(dateRangeProvider);
+
+    _syncPageController(homeState.selectedDate, dates);
 
     return Column(
       children: [
@@ -58,95 +65,136 @@ class _HomePageState extends ConsumerState<HomePage> {
           onProfile: () => _showProfileSheet(context),
         ),
         Expanded(
-          child: RefreshIndicator(
-            onRefresh: homeNotifier.refresh,
-            edgeOffset: 0,
-            color: Theme.of(context).colorScheme.primary,
-            child: ListView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
-              children: [
-                if (followingCount > 0) ...[
-                  HomeSectionHeader(
-                    title: 'Following ($followingCount)',
-                    actionLabel: homeState.showFollowing ? 'Hide' : 'Show',
-                    onAction: homeNotifier.toggleFollowing,
-                  ),
-                  if (homeState.showFollowing)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 12),
-                      child: _FollowingPreview(items: followingItems),
-                    ),
-                ],
-                const SizedBox(height: 12),
-                const HomeSectionHeader(title: ''),
-                const SizedBox(height: 12),
-                if (homeState.status == HomeStatus.loading ||
-                    homeState.status == HomeStatus.initial)
-                  const HomeLoadingSkeleton()
-                else if (homeState.status == HomeStatus.error)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 0,
-                      vertical: 24,
-                    ),
-                    child: EmptyState(
-                      title: 'Unable to load matches',
-                      message:
-                          homeState.errorMessage ??
-                          'Please check your connection and try again.',
-                      actionLabel: 'Retry',
-                      onAction: homeNotifier.retry,
-                    ),
-                  )
-                else if (homeState.status == HomeStatus.empty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 0,
-                      vertical: 24,
-                    ),
-                    child: EmptyState(
-                      title: 'No Matches',
-                      message:
-                          'No matches were found for the selected date. Try another day or pull to refresh.',
-                      actionLabel: 'Refresh',
-                      onAction: homeNotifier.retry,
-                    ),
-                  )
-                else
-                  ...homeState.leagues.map((league) {
-                    final expanded = homeState.expandedLeagueIds.contains(
-                      league.id,
-                    );
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: LeagueCard(
-                        countryCode: league.countryCode,
-                        countryFlagUrl: league.countryFlagUrl,
-                        leagueLogoUrl: league.leagueLogoUrl,
-                        leagueName: league.leagueName,
-                        matchCount: league.matches.length,
-                        expanded: expanded,
-                        onToggle: () =>
-                            homeNotifier.toggleLeagueExpanded(league.id),
-                        matches: league.matches,
-                        onMatchTap: (match) => context.pushNamed(
-                          'matchDetail',
-                          pathParameters: {'matchId': match.matchId.toString()},
-                          queryParameters: {
-                            'homeTeamId': match.homeTeamId.toString(),
-                            'awayTeamId': match.awayTeamId.toString(),
-                          },
-                        ),
+          child: PageView.builder(
+            controller: _pageController,
+            itemCount: dates.length,
+            onPageChanged: (index) {
+              if (index >= 0 && index < dates.length) {
+                homeNotifier.selectDate(dates[index]);
+              }
+            },
+            itemBuilder: (context, index) {
+              return RefreshIndicator(
+                onRefresh: homeNotifier.refresh,
+                edgeOffset: 0,
+                color: Theme.of(context).colorScheme.primary,
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+                  children: [
+                    if (followingCount > 0) ...[
+                      HomeSectionHeader(
+                        title: 'Following ($followingCount)',
+                        actionLabel: homeState.showFollowing ? 'Hide' : 'Show',
+                        onAction: homeNotifier.toggleFollowing,
                       ),
-                    );
-                  }),
-              ],
-            ),
+                      if (homeState.showFollowing)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 12),
+                          child: _FollowingPreview(items: followingItems),
+                        ),
+                    ],
+                    const SizedBox(height: 12),
+                    const HomeSectionHeader(title: ''),
+                    const SizedBox(height: 12),
+                    if (homeState.status == HomeStatus.loading ||
+                        homeState.status == HomeStatus.initial)
+                      const HomeLoadingSkeleton()
+                    else if (homeState.status == HomeStatus.error)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 0,
+                          vertical: 24,
+                        ),
+                        child: EmptyState(
+                          title: 'Unable to load matches',
+                          message:
+                              homeState.errorMessage ??
+                              'Please check your connection and try again.',
+                          actionLabel: 'Retry',
+                          onAction: homeNotifier.retry,
+                        ),
+                      )
+                    else if (homeState.status == HomeStatus.empty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 0,
+                          vertical: 24,
+                        ),
+                        child: EmptyState(
+                          title: 'No Matches',
+                          message:
+                              'No matches were found for the selected date. Try another day or pull to refresh.',
+                          actionLabel: 'Refresh',
+                          onAction: homeNotifier.retry,
+                        ),
+                      )
+                    else
+                      ...homeState.leagues.map((league) {
+                        final expanded = homeState.expandedLeagueIds.contains(
+                          league.id,
+                        );
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: LeagueCard(
+                            countryCode: league.countryCode,
+                            countryFlagUrl: league.countryFlagUrl,
+                            leagueLogoUrl: league.leagueLogoUrl,
+                            leagueName: league.leagueName,
+                            matchCount: league.matches.length,
+                            expanded: expanded,
+                            onToggle: () =>
+                                homeNotifier.toggleLeagueExpanded(league.id),
+                            matches: league.matches,
+                            onMatchTap: (match) => context.pushNamed(
+                              'matchDetail',
+                              pathParameters: {
+                                'matchId': match.matchId.toString(),
+                              },
+                              queryParameters: {
+                                'homeTeamId': match.homeTeamId.toString(),
+                                'awayTeamId': match.awayTeamId.toString(),
+                              },
+                            ),
+                          ),
+                        );
+                      }),
+                  ],
+                ),
+              );
+            },
           ),
         ),
       ],
     );
+  }
+
+  int _initialPageIndex() {
+    final dates = ref.read(dateRangeProvider);
+    final today = DateTime.now();
+    final normalizedToday = DateTime(today.year, today.month, today.day);
+    final index = dates.indexWhere(
+      (date) => DateUtils.isSameDay(date, normalizedToday),
+    );
+    return index == -1 ? 0 : index;
+  }
+
+  void _syncPageController(DateTime selectedDate, List<DateTime> dates) {
+    final selectedIndex = dates.indexWhere(
+      (date) => DateUtils.isSameDay(date, selectedDate),
+    );
+    if (selectedIndex == -1) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_pageController.hasClients) return;
+      final currentPage = _pageController.page?.round() ?? _pageController.initialPage;
+      if (currentPage == selectedIndex) return;
+      _pageController.animateToPage(
+        selectedIndex,
+        duration: const Duration(milliseconds: 260),
+        curve: Curves.easeOutCubic,
+      );
+    });
   }
 
   Future<void> _signInWithGoogle(BuildContext sheetContext) async {

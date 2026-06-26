@@ -78,12 +78,19 @@ List<MatchDetailTab> buildMatchDetailTabs(MatchDetailInfo detail) {
 }
 
 class _MatchDetailPageState extends ConsumerState<MatchDetailPage> {
-  var _selectedTab = MatchDetailTab.details;
+  late final PageController _pageController;
 
   @override
   void initState() {
     super.initState();
+    _pageController = PageController();
     Future.microtask(_loadInitialTabData);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
   }
 
   void _loadInitialTabData() {
@@ -91,42 +98,35 @@ class _MatchDetailPageState extends ConsumerState<MatchDetailPage> {
   }
 
   void _onTabSelected(MatchDetailTab tab) {
-    if (_selectedTab == tab) return;
-    setState(() {
-      _selectedTab = tab;
-    });
-    _loadTabData(tab);
+    final state = ref.read(matchDetailProvider(widget.matchId));
+    if (state.selectedTab == tab) return;
+    ref.read(matchDetailProvider(widget.matchId).notifier).setSelectedTab(tab);
+    _syncPageToTab(tab);
   }
 
-  void _loadTabData(MatchDetailTab tab) {
-    if (widget.matchId <= 0) return;
+  void _onPageChanged(int index) {
+    final tabs = _availableTabsForDetail(ref.read(matchDetailProvider(widget.matchId)).matchDetail);
+    if (index < 0 || index >= tabs.length) return;
+    ref.read(matchDetailProvider(widget.matchId).notifier).setSelectedTab(tabs[index]);
+  }
 
-    switch (tab) {
-      case MatchDetailTab.details:
-        break;
-      case MatchDetailTab.odds:
-        ref.read(matchOddsProvider(widget.matchId).notifier).loadOdds();
-        break;
-      case MatchDetailTab.lineups:
-        ref.read(matchLineupProvider(widget.matchId).notifier).loadLineup();
-        break;
-      case MatchDetailTab.standings:
-      case MatchDetailTab.knockout:
-        break;
-      case MatchDetailTab.h2h:
-        ref
-            .read(
-              matchH2HProvider(
-                MatchH2HRequest(
-                  matchId: widget.matchId,
-                  homeTeamId: widget.homeTeamId,
-                  awayTeamId: widget.awayTeamId,
-                ),
-              ).notifier,
-            )
-            .loadH2H();
-        break;
+  void _syncPageToTab(MatchDetailTab tab) {
+    final detail = ref.read(matchDetailProvider(widget.matchId)).matchDetail;
+    final tabs = _availableTabsForDetail(detail);
+    final index = tabs.indexOf(tab);
+    if (index < 0 || !_pageController.hasClients) return;
+    _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  List<MatchDetailTab> _availableTabsForDetail(MatchDetailInfo? detail) {
+    if (detail == null) {
+      return const [MatchDetailTab.details];
     }
+    return buildMatchDetailTabs(detail);
   }
 
   Widget _buildBody(MatchDetailState summaryState) {
@@ -183,9 +183,18 @@ class _MatchDetailPageState extends ConsumerState<MatchDetailPage> {
 
   Widget _buildMatchCenter(MatchDetailInfo detail) {
     final tabs = buildMatchDetailTabs(detail);
-    final selectedTab = tabs.contains(_selectedTab)
-        ? _selectedTab
-        : MatchDetailTab.details;
+    final selectedTab = ref.watch(matchDetailProvider(widget.matchId)).selectedTab;
+    final resolvedTab = tabs.contains(selectedTab) ? selectedTab : MatchDetailTab.details;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_pageController.hasClients) return;
+      final targetIndex = tabs.indexOf(resolvedTab);
+      if (targetIndex < 0) return;
+      final currentPage = _pageController.page?.round() ?? 0;
+      if (currentPage != targetIndex) {
+        _pageController.jumpToPage(targetIndex);
+      }
+    });
 
     return CustomScrollView(
       physics: const ClampingScrollPhysics(),
@@ -208,7 +217,7 @@ class _MatchDetailPageState extends ConsumerState<MatchDetailPage> {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           sliver: SliverToBoxAdapter(
             child: MatchDetailTabBar(
-              selectedTab: selectedTab,
+              selectedTab: resolvedTab,
               tabs: tabs,
               onTabSelected: _onTabSelected,
             ),
@@ -217,7 +226,16 @@ class _MatchDetailPageState extends ConsumerState<MatchDetailPage> {
         SliverPadding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           sliver: SliverToBoxAdapter(
-            child: _buildSelectedSection(detail, selectedTab),
+            child: SizedBox(
+              child: PageView.builder(
+                controller: _pageController,
+                itemCount: tabs.length,
+                onPageChanged: _onPageChanged,
+                itemBuilder: (context, index) {
+                  return _buildSelectedSection(detail, tabs[index]);
+                },
+              ),
+            ),
           ),
         ),
         const SliverPadding(padding: EdgeInsets.only(bottom: 32)),

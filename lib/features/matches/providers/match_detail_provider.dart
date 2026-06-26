@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fover/core/network/dio_client.dart';
 import 'package:fover/features/matches/data/match_detail_repository_impl.dart';
 import 'package:fover/features/matches/domain/match_detail_repository.dart';
+import 'package:fover/features/matches/presentation/pages/match_detail_page.dart';
 import 'package:fover/features/matches/providers/match_detail_state.dart';
 
 final matchDetailRepositoryProvider = Provider<MatchDetailRepository>((ref) {
@@ -51,5 +52,10 @@ class MatchDetailNotifier extends StateNotifier<MatchDetailState> {
         isRefreshing: false,
       );
     }
+  }
+
+  void setSelectedTab(MatchDetailTab tab) {
+    if (state.selectedTab == tab) return;
+    state = state.copyWith(selectedTab: tab);
   }
 }

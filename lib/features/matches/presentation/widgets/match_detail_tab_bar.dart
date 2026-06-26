@@ -25,7 +25,7 @@ class MatchDetailTabBar extends StatelessWidget {
           children: tabs.map((tab) {
             final active = tab == selectedTab;
             return Padding(
-              padding: const EdgeInsets.only(right: 8),
+              padding: const EdgeInsets.only(right: 4),
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
@@ -39,8 +39,8 @@ class MatchDetailTabBar extends StatelessWidget {
                       borderRadius: BorderRadius.circular(16),
                     ),
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 10,
+                      horizontal: 10,
+                      vertical: 7,
                     ),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
