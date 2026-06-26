@@ -53,21 +53,62 @@ class NewsDetailNotifier extends StateNotifier<NewsDetailState> {
 
   final NewsDetailRepository _repository;
   final String _articleId;
+  NewsInfo? _memoryArticle;
+  int _requestSequence = 0;
+  int? _activeRequestId;
+  Future<void>? _inFlightRequest;
 
-  Future<void> loadDetail() async {
-    state = state.copyWith(status: NewsDetailStatus.loading, errorMessage: null);
-    final result = await _repository.fetchNewsDetail(_articleId);
-    _handleResult(result);
+  bool get _hasValidMemoryArticle => _memoryArticle != null;
+
+  Future<void> loadDetail({bool forceRefresh = false, bool isRetry = false}) async {
+    final shouldForceFetch = forceRefresh || isRetry;
+
+    if (!shouldForceFetch && _hasValidMemoryArticle) {
+      state = state.copyWith(status: NewsDetailStatus.loaded, article: _memoryArticle, errorMessage: null, isRefreshing: false);
+      return;
+    }
+
+    if (_inFlightRequest != null && !shouldForceFetch) {
+      return _inFlightRequest!;
+    }
+
+    final shouldBypassCaches = shouldForceFetch || state.status == NewsDetailStatus.error;
+    final requestId = ++_requestSequence;
+    _activeRequestId = requestId;
+
+    if (shouldBypassCaches || state.status == NewsDetailStatus.initial) {
+      state = state.copyWith(status: NewsDetailStatus.loading, errorMessage: null, isRefreshing: shouldForceFetch);
+    }
+
+    final requestFuture = _fetchDetail(requestId, forceRefresh: shouldForceFetch);
+    _inFlightRequest = requestFuture;
+    await requestFuture;
+    if (identical(_inFlightRequest, requestFuture)) {
+      _inFlightRequest = null;
+    }
   }
 
   Future<void> refreshDetail() async {
     state = state.copyWith(isRefreshing: true, errorMessage: null);
-    final result = await _repository.fetchNewsDetail(_articleId, forceRefresh: true);
+    return loadDetail(forceRefresh: true);
+  }
+
+  Future<void> retryDetail() async {
+    state = state.copyWith(isRefreshing: true, errorMessage: null);
+    return loadDetail(forceRefresh: true, isRetry: true);
+  }
+
+  Future<void> _fetchDetail(int requestId, {required bool forceRefresh}) async {
+    final result = await _repository.fetchNewsDetail(_articleId, forceRefresh: forceRefresh);
+    if (requestId != _requestSequence || _activeRequestId != requestId) {
+      return;
+    }
     _handleResult(result);
   }
 
   void _handleResult(ApiResult<NewsInfo> result) {
     if (result.isSuccess) {
+      _memoryArticle = result.data;
       state = state.copyWith(status: NewsDetailStatus.loaded, article: result.data, isRefreshing: false);
     } else {
       state = state.copyWith(status: NewsDetailStatus.error, errorMessage: result.error, isRefreshing: false);

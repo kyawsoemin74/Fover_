@@ -1,8 +1,15 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:fover/core/network/api_result.dart';
 import 'package:fover/core/network/dio_error_mapper.dart';
 import 'package:fover/features/matches/data/models/match_detail_response_model.dart';
+import 'package:fover/features/matches/domain/match_detail_repository.dart';
 import 'package:fover/features/matches/domain/models/match_detail_model.dart';
+import 'package:fover/features/matches/domain/models/match_event_model.dart';
+import 'package:fover/features/matches/domain/models/match_h2h_model.dart';
+import 'package:fover/features/matches/domain/models/match_lineup_model.dart';
+import 'package:fover/features/matches/domain/models/match_odds_model.dart';
+import 'package:fover/features/matches/domain/models/match_stats_model.dart';
 import 'package:fover/features/matches/presentation/pages/match_detail_page.dart';
 import 'package:fover/features/matches/providers/match_detail_provider.dart';
 import 'package:fover/features/matches/providers/match_detail_state.dart';
@@ -237,28 +244,57 @@ void main() {
 class _FakeMatchDetailRepository implements MatchDetailRepository {
   @override
   Future<ApiResult<MatchDetailInfo>> fetchMatchDetail(int matchId) async {
-    return ApiResult.success(null);
+    return ApiResult.success(const MatchDetailInfo(
+      matchId: 1,
+      leagueId: 1,
+      season: '2024',
+      leagueName: 'League',
+      leagueLogo: '',
+      countryName: 'Country',
+      countryLogo: '',
+      matchTime: '19:00',
+      status: 'FT',
+      elapsed: 90,
+      homeTeam: 'Home',
+      homeTeamId: 1,
+      homeTeamLogo: '',
+      awayTeam: 'Away',
+      awayTeamId: 2,
+      awayTeamLogo: '',
+      homeScore: 0,
+      awayScore: 0,
+      hasLineups: false,
+      hasOdds: false,
+      hasH2H: false,
+      hasStandings: false,
+      isKnockout: false,
+      hasBracket: false,
+    ));
   }
 
   @override
-  Future<ApiResult<List<dynamic>>> fetchMatchEvents(int matchId) async {
-    return ApiResult.success([]);
+  Future<ApiResult<List<MatchEventInfo>>> fetchMatchEvents(int matchId) async {
+    return ApiResult.success(const []);
   }
 
   @override
-  Future<ApiResult<dynamic>> fetchMatchLineup(int matchId) async {
-    return ApiResult.success(null);
+  Future<ApiResult<MatchLineupInfo>> fetchMatchLineup(int matchId) async {
+    return ApiResult.failure('not implemented');
   }
 
   @override
-  Future<ApiResult<dynamic>> fetchMatchOdds(int matchId) async {
-    return ApiResult.success(null);
+  Future<ApiResult<MatchOddsInfo>> fetchMatchOdds(int matchId) async {
+    return ApiResult.failure('not implemented');
   }
 
   @override
-  Future<ApiResult<dynamic>> fetchMatchStats(int matchId) async {
-    return ApiResult.success(null);
+  Future<ApiResult<MatchH2HInfo>> fetchMatchH2H(int matchId, int homeTeamId, int awayTeamId) async {
+    return ApiResult.failure('not implemented');
+  }
+
+  @override
+  Future<ApiResult<MatchStatsInfo>> fetchMatchStats(int matchId) async {
+    return ApiResult.failure('not implemented');
   }
 }
-  });
-}
+
