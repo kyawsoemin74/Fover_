@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:fover/features/matches/presentation/pages/match_detail_page.dart';
+import 'package:fover/features/matches/providers/match_detail_provider.dart';
 import 'package:fover/features/matches/providers/match_odds_provider.dart';
 
 class MatchDetailOddsSection extends ConsumerWidget {
@@ -28,8 +30,8 @@ class MatchDetailOddsSection extends ConsumerWidget {
       return _SectionError(
         message: state.errorMessage,
         onRetry: () => ref
-            .read(matchOddsProvider(matchId).notifier)
-            .loadOdds(forceRefresh: true),
+            .read(matchDetailProvider(matchId).notifier)
+            .setSelectedTab(MatchDetailTab.odds, forceRefresh: true),
       );
     }
 
@@ -44,41 +46,45 @@ class MatchDetailOddsSection extends ConsumerWidget {
     final grouped = _groupByMarket(odds);
     final entries = _buildDisplayEntries(grouped, odds);
 
-    return Container(
-      padding: const EdgeInsets.all(_cardPadding),
-      decoration: BoxDecoration(
-        color: const Color(0xFF0B1124),
-        borderRadius: BorderRadius.circular(_cardRadius),
-        border: Border.all(color: Colors.white12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _BookmakerHeader(title: bookmaker),
-          const SizedBox(height: 8),
-          ...entries.asMap().entries.map((pair) {
-            final idx = pair.key;
-            final entry = pair.value;
-            final items = entry.value;
-            return Padding(
-              padding: const EdgeInsets.only(bottom: _itemSpacing),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _MarketHeading(title: entry.key),
-                  const SizedBox(height: 4),
-                  const Divider(color: Colors.white12, height: 1, thickness: 0.7),
-                  const SizedBox(height: 6),
-                  _buildMarketContent(entry.key, items),
-                  if (idx < entries.length - 1) ...[
-                    const SizedBox(height: _marketSpacing),
-                  ],
-                ],
-              ),
-            );
-          }),
-        ],
-      ),
+    return ListView(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(_cardPadding),
+          decoration: BoxDecoration(
+            color: const Color(0xFF0B1124),
+            borderRadius: BorderRadius.circular(_cardRadius),
+            border: Border.all(color: Colors.white12),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _BookmakerHeader(title: bookmaker),
+              const SizedBox(height: 8),
+              ...entries.asMap().entries.map((pair) {
+                final idx = pair.key;
+                final entry = pair.value;
+                final items = entry.value;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: _itemSpacing),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _MarketHeading(title: entry.key),
+                      const SizedBox(height: 4),
+                      const Divider(color: Colors.white12, height: 1, thickness: 0.7),
+                      const SizedBox(height: 6),
+                      _buildMarketContent(entry.key, items),
+                      if (idx < entries.length - 1) ...[
+                        const SizedBox(height: _marketSpacing),
+                      ],
+                    ],
+                  ),
+                );
+              }),
+            ],
+          ),
+        ),
+      ],
     );
   }
 

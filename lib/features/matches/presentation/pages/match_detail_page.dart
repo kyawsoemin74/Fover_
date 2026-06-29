@@ -84,6 +84,7 @@ class _MatchDetailPageState extends ConsumerState<MatchDetailPage> {
   void initState() {
     super.initState();
     _pageController = PageController();
+    _registerTabLoaders();
     Future.microtask(_loadInitialTabData);
   }
 
@@ -91,6 +92,32 @@ class _MatchDetailPageState extends ConsumerState<MatchDetailPage> {
   void dispose() {
     _pageController.dispose();
     super.dispose();
+  }
+
+  void _registerTabLoaders() {
+    if (widget.matchId <= 0) return;
+
+    final notifier = ref.read(matchDetailProvider(widget.matchId).notifier);
+
+    notifier.registerTabLoader(MatchDetailTab.lineups, ({bool forceRefresh = false}) async {
+      await ref.read(matchLineupProvider(widget.matchId).notifier).loadLineup(forceRefresh: forceRefresh);
+    });
+
+    notifier.registerTabLoader(MatchDetailTab.odds, ({bool forceRefresh = false}) async {
+      await ref.read(matchOddsProvider(widget.matchId).notifier).loadOdds(forceRefresh: forceRefresh);
+    });
+
+    notifier.registerTabLoader(MatchDetailTab.h2h, ({bool forceRefresh = false}) async {
+      await ref.read(
+        matchH2HProvider(
+          MatchH2HRequest(
+            matchId: widget.matchId,
+            homeTeamId: widget.homeTeamId,
+            awayTeamId: widget.awayTeamId,
+          ),
+        ).notifier,
+      ).loadH2H(forceRefresh: forceRefresh);
+    });
   }
 
   void _loadInitialTabData() {
@@ -225,16 +252,15 @@ class _MatchDetailPageState extends ConsumerState<MatchDetailPage> {
         ),
         SliverPadding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-          sliver: SliverToBoxAdapter(
-            child: SizedBox(
-              child: PageView.builder(
-                controller: _pageController,
-                itemCount: tabs.length,
-                onPageChanged: _onPageChanged,
-                itemBuilder: (context, index) {
-                  return _buildSelectedSection(detail, tabs[index]);
-                },
-              ),
+          sliver: SliverFillRemaining(
+            hasScrollBody: true,
+            child: PageView.builder(
+              controller: _pageController,
+              itemCount: tabs.length,
+              onPageChanged: _onPageChanged,
+              itemBuilder: (context, index) {
+                return _buildSelectedSection(detail, tabs[index]);
+              },
             ),
           ),
         ),

@@ -147,8 +147,7 @@ class _MatchDetailDetailsSectionState
     ].where((entry) => entry != null && entry.trim().isNotEmpty).join(', ');
     final locationText = matchInfo?.venueCity?.trim() ?? '';
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    return ListView(
       children: [
         if (showStatistics) ...[
           MatchDetailStatsSection(matchId: widget.matchId),

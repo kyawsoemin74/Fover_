@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fover/features/matches/domain/models/match_h2h_model.dart';
+import 'package:fover/features/matches/presentation/pages/match_detail_page.dart';
+import 'package:fover/features/matches/providers/match_detail_provider.dart';
 import 'package:fover/features/matches/providers/match_h2h_provider.dart';
 
 class MatchDetailH2HSection extends ConsumerStatefulWidget {
@@ -43,8 +45,8 @@ class _MatchDetailH2HSectionState extends ConsumerState<MatchDetailH2HSection> {
       return _SectionError(
         message: state.errorMessage,
         onRetry: () => ref
-            .read(matchH2HProvider(request).notifier)
-            .loadH2H(forceRefresh: true),
+            .read(matchDetailProvider(widget.matchId).notifier)
+            .setSelectedTab(MatchDetailTab.h2h, forceRefresh: true),
       );
     }
 
@@ -58,8 +60,7 @@ class _MatchDetailH2HSectionState extends ConsumerState<MatchDetailH2HSection> {
     final hasMore = h2h.meetings.length > 5;
     final meetings = _showAll ? h2h.meetings : h2h.meetings.take(5).toList();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    return ListView(
       children: [
         const _SectionHeading(title: 'Head to Head'),
         const SizedBox(height: 10),

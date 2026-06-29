@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:fover/features/matches/presentation/pages/match_detail_page.dart';
+import 'package:fover/features/matches/providers/match_detail_provider.dart';
 import 'package:fover/features/matches/providers/match_lineup_provider.dart';
 
 class MatchDetailLineupSection extends ConsumerWidget {
@@ -20,8 +22,9 @@ class MatchDetailLineupSection extends ConsumerWidget {
     if (state.status == MatchLineupStatus.error) {
       return _SectionError(
         message: state.errorMessage,
-        onRetry: () =>
-            ref.read(matchLineupProvider(matchId).notifier).loadLineup(forceRefresh: true),
+        onRetry: () => ref
+            .read(matchDetailProvider(matchId).notifier)
+            .setSelectedTab(MatchDetailTab.lineups, forceRefresh: true),
       );
     }
 
@@ -32,8 +35,7 @@ class MatchDetailLineupSection extends ConsumerWidget {
       );
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    return ListView(
       children: [
         _LineupPitchBoard(
           homeTeamName: lineup.home.teamName,

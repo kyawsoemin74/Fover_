@@ -29,8 +29,7 @@ class MatchDetailStandingsSection extends ConsumerWidget {
 
     final standingsAsync = ref.watch(standingsProvider(request));
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    return ListView(
       children: [
         standingsAsync.when(
           loading: () => const Center(

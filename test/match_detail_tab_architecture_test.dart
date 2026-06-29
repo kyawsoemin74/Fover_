@@ -238,6 +238,32 @@ void main() {
 
       expect(notifier.debugState.selectedTab, MatchDetailTab.lineups);
     });
+
+    test('triggers registered tab loaders when the selected tab changes', () async {
+      final notifier = MatchDetailNotifier(_FakeMatchDetailRepository());
+      var lineupCalls = 0;
+      var oddsCalls = 0;
+      var h2hCalls = 0;
+
+      notifier.registerTabLoader(MatchDetailTab.lineups, ({bool forceRefresh = false}) async {
+        lineupCalls += 1;
+      });
+      notifier.registerTabLoader(MatchDetailTab.odds, ({bool forceRefresh = false}) async {
+        oddsCalls += 1;
+      });
+      notifier.registerTabLoader(MatchDetailTab.h2h, ({bool forceRefresh = false}) async {
+        h2hCalls += 1;
+      });
+
+      await notifier.setSelectedTab(MatchDetailTab.lineups);
+      await notifier.setSelectedTab(MatchDetailTab.odds);
+      await notifier.setSelectedTab(MatchDetailTab.h2h);
+      await notifier.setSelectedTab(MatchDetailTab.h2h);
+
+      expect(lineupCalls, 1);
+      expect(oddsCalls, 1);
+      expect(h2hCalls, 1);
+    });
   });
 }
 

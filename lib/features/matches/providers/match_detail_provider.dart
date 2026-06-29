@@ -24,6 +24,9 @@ class MatchDetailNotifier extends StateNotifier<MatchDetailState> {
   MatchDetailNotifier(this._repository) : super(const MatchDetailState());
 
   final MatchDetailRepository _repository;
+  final Map<MatchDetailTab, Future<void> Function({bool forceRefresh})> _tabLoaders = {};
+  final Set<MatchDetailTab> _loadedTabs = <MatchDetailTab>{};
+  final Set<MatchDetailTab> _loadingTabs = <MatchDetailTab>{};
 
   Future<void> loadMatch(int matchId) async {
     state = state.copyWith(status: MatchDetailStatus.loading, errorMessage: null);
@@ -54,8 +57,44 @@ class MatchDetailNotifier extends StateNotifier<MatchDetailState> {
     }
   }
 
-  void setSelectedTab(MatchDetailTab tab) {
-    if (state.selectedTab == tab) return;
+  void registerTabLoader(
+    MatchDetailTab tab,
+    Future<void> Function({bool forceRefresh}) loader,
+  ) {
+    _tabLoaders[tab] = loader;
+  }
+
+  Future<void> setSelectedTab(
+    MatchDetailTab tab, {
+    bool forceRefresh = false,
+  }) async {
+    if (state.selectedTab == tab && !forceRefresh) return;
+
     state = state.copyWith(selectedTab: tab);
+    await _maybeLoadTabData(tab, forceRefresh: forceRefresh);
+  }
+
+  Future<void> _maybeLoadTabData(
+    MatchDetailTab tab, {
+    bool forceRefresh = false,
+  }) async {
+    if (tab == MatchDetailTab.details ||
+        tab == MatchDetailTab.standings ||
+        tab == MatchDetailTab.knockout) {
+      return;
+    }
+
+    if (_loadingTabs.contains(tab)) return;
+    if (!forceRefresh && (_loadedTabs.contains(tab) || _tabLoaders[tab] == null)) {
+      return;
+    }
+
+    _loadingTabs.add(tab);
+    try {
+      await _tabLoaders[tab]!(forceRefresh: forceRefresh);
+      _loadedTabs.add(tab);
+    } finally {
+      _loadingTabs.remove(tab);
+    }
   }
 }
