@@ -223,37 +223,31 @@ class _MatchDetailPageState extends ConsumerState<MatchDetailPage> {
       }
     });
 
-    return CustomScrollView(
-      physics: const ClampingScrollPhysics(),
-      slivers: [
-        SliverPadding(
+    return Column(
+      children: [
+        Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-          sliver: SliverToBoxAdapter(
-            child: MatchDetailHeader(
-              detail: detail,
-              onHomeTeamTap: detail.homeTeamId > 0
-                  ? () => context.push('/team/${detail.homeTeamId}')
-                  : null,
-              onAwayTeamTap: detail.awayTeamId > 0
-                  ? () => context.push('/team/${detail.awayTeamId}')
-                  : null,
-            ),
+          child: MatchDetailHeader(
+            detail: detail,
+            onHomeTeamTap: detail.homeTeamId > 0
+                ? () => context.push('/team/${detail.homeTeamId}')
+                : null,
+            onAwayTeamTap: detail.awayTeamId > 0
+                ? () => context.push('/team/${detail.awayTeamId}')
+                : null,
           ),
         ),
-        SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          sliver: SliverToBoxAdapter(
-            child: MatchDetailTabBar(
-              selectedTab: resolvedTab,
-              tabs: tabs,
-              onTabSelected: _onTabSelected,
-            ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: MatchDetailTabBar(
+            selectedTab: resolvedTab,
+            tabs: tabs,
+            onTabSelected: _onTabSelected,
           ),
         ),
-        SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-          sliver: SliverFillRemaining(
-            hasScrollBody: true,
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             child: PageView.builder(
               controller: _pageController,
               itemCount: tabs.length,
@@ -264,7 +258,7 @@ class _MatchDetailPageState extends ConsumerState<MatchDetailPage> {
             ),
           ),
         ),
-        const SliverPadding(padding: EdgeInsets.only(bottom: 32)),
+        const SizedBox(height: 32),
       ],
     );
   }

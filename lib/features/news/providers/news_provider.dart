@@ -7,31 +7,6 @@ import 'package:fover/features/news/domain/news_repository.dart';
 
 enum NewsCategory { forYou, latest, transfers, tips }
 
-final selectedNewsCategoryProvider = StateProvider<NewsCategory>((ref) => NewsCategory.forYou);
-
-final filteredNewsProvider = Provider<List<NewsInfo>>((ref) {
-  final state = ref.watch(newsProvider);
-  final category = ref.watch(selectedNewsCategoryProvider);
-  final items = state.news;
-
-  String normalize(String s) => s.toLowerCase();
-
-  switch (category) {
-    case NewsCategory.forYou:
-      // Placeholder: currently returns all items; replace with personalization later.
-      return items;
-    case NewsCategory.latest:
-      // Latest: return as-is (assumed already sorted by freshness)
-      return items;
-    case NewsCategory.transfers:
-      final keywords = RegExp(r"transfer|signed|joins|loan|transfermarkt|transfered", caseSensitive: false);
-      return items.where((n) => keywords.hasMatch(normalize(n.title)) || keywords.hasMatch(normalize(n.content))).toList();
-    case NewsCategory.tips:
-      final keywords = RegExp(r"tip|prediction|bet|odds|forecast", caseSensitive: false);
-      return items.where((n) => keywords.hasMatch(normalize(n.title)) || keywords.hasMatch(normalize(n.content))).toList();
-  }
-});
-
 enum NewsStatus { initial, loading, loaded, empty, error }
 
 class NewsState {

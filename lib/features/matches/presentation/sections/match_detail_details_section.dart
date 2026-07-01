@@ -154,12 +154,7 @@ class _MatchDetailDetailsSectionState
           const SizedBox(height: 16),
         ],
         if (showEventsLoading) ...[
-          const _SectionStatusCard(
-            icon: Icons.timeline_outlined,
-            title: 'Loading events',
-            message: 'Fetching match event timeline.',
-          ),
-          const SizedBox(height: 16),
+          const SizedBox.shrink(),
         ] else if (showEventsError) ...[
           _SectionStatusCard(
             icon: Icons.error_outline,

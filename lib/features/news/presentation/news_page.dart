@@ -16,48 +16,37 @@ class NewsPage extends ConsumerStatefulWidget {
 }
 
 class _NewsPageState extends ConsumerState<NewsPage> {
-  static const _loadStep = 5;
-  final _scrollController = ScrollController();
-  int _visibleFeedItems = 6;
+  late final PageController _pageController;
+  int _currentPageIndex = 0;
+  static const _pageAnimationDuration = Duration(milliseconds: 260);
+  static const _pageAnimationCurve = Curves.easeOutCubic;
 
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(_onScroll);
+    _pageController = PageController(initialPage: _currentPageIndex);
   }
 
   @override
   void dispose() {
-    _scrollController.removeListener(_onScroll);
-    _scrollController.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
-  void _onScroll() {
-    if (!_scrollController.hasClients) return;
-    final filteredCount = ref.read(filteredNewsProvider).length;
-    if (_scrollController.position.maxScrollExtent - _scrollController.offset < 120 && _visibleFeedItems < filteredCount) {
-      setState(() {
-        _visibleFeedItems = min(filteredCount, _visibleFeedItems + _loadStep);
-      });
-    }
+  void _animateToPage(int pageIndex) {
+    if (!_pageController.hasClients || pageIndex == _currentPageIndex) return;
+    _pageController.animateToPage(
+      pageIndex,
+      duration: _pageAnimationDuration,
+      curve: _pageAnimationCurve,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final newsState = ref.watch(newsProvider);
     final notifier = ref.read(newsProvider.notifier);
-    final status = ref.watch(newsProvider.select((s) => s.status));
-    final selectedCategory = ref.watch(selectedNewsCategoryProvider);
-    final filtered = ref.watch(filteredNewsProvider);
-    final errorMessage = ref.watch(newsProvider.select((s) => s.errorMessage));
-
-    final heroArticle = filtered.isNotEmpty ? filtered.first : null;
-    final secondaryArticles = filtered.length > 1 ? filtered.sublist(1, min(filtered.length, 4)) : <NewsInfo>[];
-    final feedStart = 1 + secondaryArticles.length;
-    final feedArticles = filtered.length > feedStart
-        ? filtered.sublist(feedStart, min(filtered.length, feedStart + _visibleFeedItems))
-        : <NewsInfo>[];
-    final hasMore = filtered.length > feedStart + _visibleFeedItems;
+    final selectedCategory = NewsCategory.values[_currentPageIndex];
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -69,119 +58,31 @@ class _NewsPageState extends ConsumerState<NewsPage> {
           _NewsCategoryBar(
             selectedCategory: selectedCategory,
             onCategorySelected: (category) {
-              ref.read(selectedNewsCategoryProvider.notifier).state = category;
-              setState(() {
-                _visibleFeedItems = 6;
-              });
+              final pageIndex = NewsCategory.values.indexOf(category);
+              _animateToPage(pageIndex);
             },
           ),
           const SizedBox(height: 10),
           Expanded(
-            child: RefreshIndicator(
-              onRefresh: notifier.refreshNews,
-              displacement: 36,
-              child: CustomScrollView(
-                controller: _scrollController,
-                physics: const AlwaysScrollableScrollPhysics(),
-                slivers: [
-                  SliverToBoxAdapter(
-                    child: Text(
-                      '',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
-                    ),
-                  ),
-                  const SliverToBoxAdapter(child: SizedBox(height: 18)),
-                  if (status == NewsStatus.loading)
-                    const SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: Center(child: CircularProgressIndicator()),
-                    )
-                  else if (status == NewsStatus.error)
-                    SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: EmptyState(
-                        title: 'Unable to load news',
-                        message: errorMessage ?? 'Please check your connection and try again.',
-                        actionLabel: 'Retry',
-                        onAction: notifier.loadNews,
-                      ),
-                    )
-                  else if (status == NewsStatus.empty)
-                    SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: EmptyState(
-                        title: 'No news available',
-                        message: 'There are no headlines available right now.',
-                        actionLabel: 'Refresh',
-                        onAction: notifier.refreshNews,
-                      ),
-                    )
-                  else ...[
-                    if (heroArticle != null) ...[
-                      SliverToBoxAdapter(
-                        child: _NewsHeroCard(article: heroArticle, onTap: () => _openArticle(heroArticle)),
-                      ),
-                      const SliverToBoxAdapter(child: SizedBox(height: 24)),
-                    ],
-                    if (secondaryArticles.isNotEmpty) ...[
-                      SliverToBoxAdapter(child: _SectionHeader(title: 'Secondary Stories')),
-                      SliverToBoxAdapter(
-                        child: SizedBox(
-                          height: 210,
-                          child: ListView.separated(
-                            padding: const EdgeInsets.only(top: 12),
-                            scrollDirection: Axis.horizontal,
-                            physics: const BouncingScrollPhysics(),
-                            itemCount: secondaryArticles.length,
-                            separatorBuilder: (context, index) => const SizedBox(width: 12),
-                            itemBuilder: (context, index) {
-                              final article = secondaryArticles[index];
-                              return _SecondaryArticleCard(article: article, onTap: () => _openArticle(article));
-                            },
-                          ),
-                        ),
-                      ),
-                      const SliverToBoxAdapter(child: SizedBox(height: 24)),
-                    ],
-                    SliverToBoxAdapter(child: _SectionHeader(title: 'Latest News')),
-                    if (feedArticles.isEmpty)
-                      SliverToBoxAdapter(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 40),
-                          child: Center(
-                            child: Text(
-                              'No stories match this category yet.',
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
-                            ),
-                          ),
-                        ),
-                      )
-                    else
-                      SliverList(
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) {
-                            final article = feedArticles[index];
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 14),
-                              child: _LatestNewsTile(article: article, onTap: () => _openArticle(article)),
-                            );
-                          },
-                          childCount: feedArticles.length,
-                        ),
-                      ),
-                    if (hasMore)
-                      const SliverToBoxAdapter(
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(vertical: 18),
-                          child: Center(child: CircularProgressIndicator()),
-                        ),
-                      ),
-                    const SliverPadding(padding: EdgeInsets.only(bottom: 32)),
-                  ],
-                ],
-              ),
+            child: PageView(
+              controller: _pageController,
+              onPageChanged: (pageIndex) {
+                setState(() {
+                  _currentPageIndex = pageIndex;
+                });
+              },
+              children: NewsCategory.values.map((category) {
+                return NewsCategoryPage(
+                  key: PageStorageKey(category),
+                  category: category,
+                  articles: newsState.news,
+                  status: newsState.status,
+                  errorMessage: newsState.errorMessage,
+                  onRefresh: notifier.refreshNews,
+                  onRetry: notifier.loadNews,
+                  onArticleTap: _openArticle,
+                );
+              }).toList(),
             ),
           ),
         ],
@@ -265,7 +166,6 @@ class _CompactNewsHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final primary = theme.colorScheme.primary;
-    final color = theme.colorScheme.onSurface;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
@@ -312,18 +212,169 @@ class _CompactNewsHeader extends StatelessWidget {
   }
 }
 
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.title});
+class NewsCategoryPage extends StatefulWidget {
+  const NewsCategoryPage({
+    super.key,
+    required this.category,
+    required this.articles,
+    required this.status,
+    required this.errorMessage,
+    required this.onRefresh,
+    required this.onRetry,
+    required this.onArticleTap,
+  });
 
-  final String title;
+  final NewsCategory category;
+  final List<NewsInfo> articles;
+  final NewsStatus status;
+  final String? errorMessage;
+  final Future<void> Function() onRefresh;
+  final VoidCallback onRetry;
+  final ValueChanged<NewsInfo> onArticleTap;
+
+  @override
+  State<NewsCategoryPage> createState() => _NewsCategoryPageState();
+}
+
+class _NewsCategoryPageState extends State<NewsCategoryPage> {
+  static const _loadStep = 5;
+  final _scrollController = ScrollController();
+  int _visibleFeedItems = 6;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void didUpdateWidget(NewsCategoryPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.category != widget.category) {
+      setState(() {
+        _visibleFeedItems = 6;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final filteredCount = _filteredArticles().length;
+    if (_scrollController.position.maxScrollExtent - _scrollController.offset < 120 && _visibleFeedItems < filteredCount) {
+      setState(() {
+        _visibleFeedItems = min(filteredCount, _visibleFeedItems + _loadStep);
+      });
+    }
+  }
+
+  List<NewsInfo> _filteredArticles() {
+    final items = widget.articles;
+    String normalize(String s) => s.toLowerCase();
+
+    switch (widget.category) {
+      case NewsCategory.forYou:
+      case NewsCategory.latest:
+        return items;
+      case NewsCategory.transfers:
+        final keywords = RegExp(r"transfer|signed|joins|loan|transfermarkt|transfered", caseSensitive: false);
+        return items.where((n) => keywords.hasMatch(normalize(n.title)) || keywords.hasMatch(normalize(n.content))).toList();
+      case NewsCategory.tips:
+        final keywords = RegExp(r"tip|prediction|bet|odds|forecast", caseSensitive: false);
+        return items.where((n) => keywords.hasMatch(normalize(n.title)) || keywords.hasMatch(normalize(n.content))).toList();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12, top: 4),
-      child: Text(
-        title,
-        style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+    final filteredArticles = _filteredArticles();
+    final heroArticle = filteredArticles.isNotEmpty ? filteredArticles.first : null;
+    final feedArticles = filteredArticles.length > 1
+        ? filteredArticles.sublist(1, min(filteredArticles.length, 1 + _visibleFeedItems))
+        : <NewsInfo>[];
+    final hasMore = filteredArticles.length > 1 + _visibleFeedItems;
+
+    return RefreshIndicator(
+      onRefresh: widget.onRefresh,
+      displacement: 36,
+      child: CustomScrollView(
+        controller: _scrollController,
+        physics: const AlwaysScrollableScrollPhysics(),
+        slivers: [
+          const SliverToBoxAdapter(child: SizedBox(height: 20)),
+          if (widget.status == NewsStatus.loading)
+            const SliverFillRemaining(
+              hasScrollBody: false,
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (widget.status == NewsStatus.error)
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: EmptyState(
+                title: 'Unable to load news',
+                message: widget.errorMessage ?? 'Please check your connection and try again.',
+                actionLabel: 'Retry',
+                onAction: widget.onRetry,
+              ),
+            )
+          else if (widget.status == NewsStatus.empty)
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: EmptyState(
+                title: 'No news available',
+                message: 'There are no headlines available right now.',
+                actionLabel: 'Refresh',
+                onAction: widget.onRefresh,
+              ),
+            )
+          else ...[
+            if (heroArticle != null) ...[
+              SliverToBoxAdapter(
+                child: _NewsHeroCard(article: heroArticle, onTap: () => widget.onArticleTap(heroArticle)),
+              ),
+              const SliverToBoxAdapter(child: SizedBox(height: 20)),
+            ],
+            if (feedArticles.isEmpty)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 40),
+                  child: Center(
+                    child: Text(
+                      'No stories match this category yet.',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                    ),
+                  ),
+                ),
+              )
+            else
+              SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    final article = feedArticles[index];
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: _LatestNewsTile(article: article, onTap: () => widget.onArticleTap(article)),
+                    );
+                  },
+                  childCount: feedArticles.length,
+                ),
+              ),
+            if (hasMore)
+              const SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 18),
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+              ),
+            const SliverPadding(padding: EdgeInsets.only(bottom: 32)),
+          ],
+        ],
       ),
     );
   }
@@ -343,12 +394,12 @@ class _NewsHeroCard extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(28),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
+              blurRadius: 24,
+              offset: const Offset(0, 12),
             ),
           ],
         ),
@@ -356,17 +407,19 @@ class _NewsHeroCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
               child: article.hasImage
-                  ? CachedNetworkImage(
-                      imageUrl: article.imageUrl,
-                      height: 220,
-                      fit: BoxFit.cover,
-                      placeholder: (context, url) => Container(color: theme.colorScheme.surfaceContainerHighest),
-                      errorWidget: (context, url, error) => Container(color: theme.colorScheme.surfaceContainerHighest),
+                  ? AspectRatio(
+                      aspectRatio: 16 / 9,
+                      child: CachedNetworkImage(
+                        imageUrl: article.imageUrl,
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => Container(color: theme.colorScheme.surfaceContainerHighest),
+                        errorWidget: (context, url, error) => Container(color: theme.colorScheme.surfaceContainerHighest),
+                      ),
                     )
                   : Container(
-                      height: 220,
+                      height: 184,
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [theme.colorScheme.primary, theme.colorScheme.primary.withValues(alpha: 0.72)],
@@ -378,17 +431,22 @@ class _NewsHeroCard extends StatelessWidget {
                     ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
+              padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _HorizontalBadge(label: article.category.isNotEmpty ? article.category : 'Top Story'),
                   const SizedBox(height: 10),
-                  Text(article.title, style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
+                  Text(
+                    article.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800, height: 1.25),
+                  ),
                   const SizedBox(height: 12),
                   Text(
                     '${article.displaySource} • ${article.publishedTimeLabel} • ${article.readTimeLabel}',
-                    style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                    style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant, height: 1.5),
                   ),
                 ],
               ),
@@ -400,67 +458,6 @@ class _NewsHeroCard extends StatelessWidget {
   }
 }
 
-class _SecondaryArticleCard extends StatelessWidget {
-  const _SecondaryArticleCard({required this.article, required this.onTap});
-
-  final NewsInfo article;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return SizedBox(
-      width: 240,
-      child: Material(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(22),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(22),
-          onTap: onTap,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
-                child: article.hasImage
-                    ? CachedNetworkImage(
-                        imageUrl: article.imageUrl,
-                        height: 120,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) => Container(color: theme.colorScheme.surfaceContainerHighest),
-                        errorWidget: (context, url, error) => Container(color: theme.colorScheme.surfaceContainerHighest),
-                      )
-                    : Container(
-                        height: 120,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [theme.colorScheme.primary.withValues(alpha: 0.88), theme.colorScheme.primary.withValues(alpha: 0.55)],
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                          ),
-                        ),
-                        child: const Center(child: Icon(Icons.sports_soccer, size: 48, color: Colors.white70)),
-                      ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(article.title, maxLines: 3, overflow: TextOverflow.ellipsis, style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w700)),
-                    const SizedBox(height: 10),
-                    Text('${article.displaySource} • ${article.publishedTimeLabel}', style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 class _LatestNewsTile extends StatelessWidget {
   const _LatestNewsTile({required this.article, required this.onTap});
@@ -478,39 +475,47 @@ class _LatestNewsTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (article.hasImage)
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: CachedNetworkImage(
-                    imageUrl: article.imageUrl,
-                    width: 90,
-                    height: 82,
-                    fit: BoxFit.cover,
-                    placeholder: (context, url) => Container(color: theme.colorScheme.surfaceContainerHighest),
-                    errorWidget: (context, url, error) => Container(color: theme.colorScheme.surfaceContainerHighest),
-                  ),
-                )
-              else
-                Container(
-                  width: 90,
-                  height: 82,
-                     decoration: BoxDecoration(
-                       color: theme.colorScheme.primary.withValues(alpha: 0.18),
-                       borderRadius: BorderRadius.circular(16),
-                     ),
-                  child: const Icon(Icons.sports_soccer, color: Colors.white70, size: 28),
-                ),
-              const SizedBox(width: 14),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(18),
+                child: article.hasImage
+                    ? CachedNetworkImage(
+                        imageUrl: article.imageUrl,
+                        width: 92,
+                        height: 72,
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => Container(color: theme.colorScheme.surfaceContainerHighest),
+                        errorWidget: (context, url, error) => Container(color: theme.colorScheme.surfaceContainerHighest),
+                      )
+                    : Container(
+                        width: 92,
+                        height: 72,
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.primary.withValues(alpha: 0.18),
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                        child: const Icon(Icons.sports_soccer, color: Colors.white70, size: 28),
+                      ),
+              ),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(article.title, maxLines: 3, overflow: TextOverflow.ellipsis, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
-                    const SizedBox(height: 10),
-                    Text('${article.displaySource} • ${article.publishedTimeLabel}', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                    Text(
+                      article.title,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700, height: 1.28),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '${article.displaySource} • ${article.publishedTimeLabel}',
+                      style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant, height: 1.5),
+                    ),
                   ],
                 ),
               ),
