@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fover/features/matches/domain/models/match_detail_model.dart';
+import 'package:fover/features/matches/domain/models/match_event_display_mapper.dart';
 import 'package:fover/features/matches/domain/models/match_event_model.dart';
 import 'package:fover/features/matches/presentation/sections/match_detail_stats_section.dart';
 import 'package:fover/features/matches/presentation/widgets/match_prediction_card.dart';
@@ -514,7 +515,7 @@ class _FotMobRow extends StatelessWidget {
   }
 
   Widget _buildEventContent(BuildContext context, bool isHome) {
-    final isSub = event.type == MatchEventType.substitution;
+    final displayType = MatchEventDisplayMapper.fromEvent(event);
     final rawScore = _scoreLabel(event);
     final scoreLabel = score ?? rawScore;
     final playerName = event.playerName.isNotEmpty
@@ -525,60 +526,117 @@ class _FotMobRow extends StatelessWidget {
         ? CrossAxisAlignment.start
         : CrossAxisAlignment.end;
 
-    if (isSub) {
-      final inName = event.assistName?.trim();
-      final outName = event.playerName.isNotEmpty
-          ? event.playerName.trim()
-          : null;
-      final fallback = _parseSubstitution(event);
-      final inLabel = inName?.isNotEmpty == true
-          ? inName
-          : (fallback[0].isNotEmpty ? fallback[0] : null);
-      final outLabel = outName?.isNotEmpty == true
-          ? outName
-          : (fallback[1].isNotEmpty ? fallback[1] : null);
+    switch (displayType) {
+      case MatchEventDisplayType.substitution:
+        final inName = event.assistName?.trim();
+        final outName = event.playerName.isNotEmpty
+            ? event.playerName.trim()
+            : null;
+        final fallback = _parseSubstitution(event);
+        final inLabel = inName?.isNotEmpty == true
+            ? inName
+            : (fallback[0].isNotEmpty ? fallback[0] : null);
+        final outLabel = outName?.isNotEmpty == true
+            ? outName
+            : (fallback[1].isNotEmpty ? fallback[1] : null);
 
-      if (inLabel == null && outLabel == null) {
-        final fallbackText = event.detail.isNotEmpty
-            ? event.detail
-            : (event.playerName.isNotEmpty ? event.playerName : 'Substitution');
-        return Text(
-          fallbackText,
-          textAlign: textAlign,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-            height: 1.2,
-          ),
+        if (inLabel == null && outLabel == null) {
+          final fallbackText = event.detail.isNotEmpty
+              ? event.detail
+              : (event.playerName.isNotEmpty ? event.playerName : 'Substitution');
+          return Text(
+            fallbackText,
+            textAlign: textAlign,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+              height: 1.2,
+            ),
+          );
+        }
+
+        return Column(
+          crossAxisAlignment: crossAxis,
+          children: [
+            if (inLabel != null)
+              _buildSubstitutionLine(context, '🟢', inLabel, textAlign),
+            if (outLabel != null)
+              _buildSubstitutionLine(context, '🔴', outLabel, textAlign),
+          ],
         );
-      }
-
-      return Column(
-        crossAxisAlignment: crossAxis,
-        children: [
-          if (inLabel != null)
-            _buildSubstitutionLine(context, '🟢', inLabel, textAlign),
-          if (outLabel != null)
-            _buildSubstitutionLine(context, '🔴', outLabel, textAlign),
-        ],
-      );
+      case MatchEventDisplayType.goal:
+      case MatchEventDisplayType.penaltyGoal:
+      case MatchEventDisplayType.ownGoal:
+      case MatchEventDisplayType.penalty:
+        final primaryText = '${displayType == MatchEventDisplayType.penalty ? '⚽' : '⚽'} $playerName${scoreLabel != null ? ' ($scoreLabel)' : ''}';
+        return Column(
+          crossAxisAlignment: crossAxis,
+          children: [
+            Text(
+              primaryText,
+              textAlign: textAlign,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+                height: 1.2,
+              ),
+            ),
+            if (event.assistName != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 1.0),
+                child: Text(
+                  'Assist by ${event.assistName}',
+                  textAlign: textAlign,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Colors.white70,
+                    fontWeight: FontWeight.w400,
+                    height: 1.2,
+                  ),
+                ),
+              ),
+          ],
+        );
+      case MatchEventDisplayType.yellowCard:
+        return _buildSimpleText(context, textAlign, '🟨 $playerName', crossAxis);
+      case MatchEventDisplayType.redCard:
+        return _buildSimpleText(context, textAlign, '🟥 $playerName', crossAxis);
+      case MatchEventDisplayType.secondYellow:
+        return _buildSimpleText(context, textAlign, '🟨🟥 $playerName', crossAxis);
+      case MatchEventDisplayType.goalCancelled:
+        return _buildVarCancelledText(context, textAlign, playerName, crossAxis);
+      case MatchEventDisplayType.goalConfirmed:
+        return _buildVarConfirmedText(context, textAlign, playerName, crossAxis);
+      case MatchEventDisplayType.varCheck:
+        return _buildVarCheckText(context, textAlign, playerName, crossAxis);
+      case MatchEventDisplayType.redCardConfirmed:
+        return _buildRedCardConfirmedText(context, textAlign, playerName, crossAxis);
+      case MatchEventDisplayType.redCardCancelled:
+        return _buildRedCardCancelledText(context, textAlign, playerName, crossAxis);
+      case MatchEventDisplayType.missedPenalty:
+        return _buildSimpleText(context, textAlign, '❌⚽ $playerName', crossAxis);
+      case MatchEventDisplayType.injury:
+        return _buildSimpleText(context, textAlign, '🩹 $playerName', crossAxis);
+      case MatchEventDisplayType.kickoff:
+      case MatchEventDisplayType.halfTime:
+      case MatchEventDisplayType.fullTime:
+      case MatchEventDisplayType.extraTime:
+      case MatchEventDisplayType.penaltyShootout:
+      case MatchEventDisplayType.unknown:
+        return _buildSimpleText(context, textAlign, playerName, crossAxis);
     }
+  }
 
-    final primaryText = event.type == MatchEventType.yellowCard
-        ? '🟨 $playerName'
-        : event.type == MatchEventType.redCard
-        ? '🟥 $playerName'
-        : (event.type == MatchEventType.goal ||
-              event.type == MatchEventType.ownGoal ||
-              event.type == MatchEventType.penalty)
-        ? '⚽ $playerName${scoreLabel != null ? ' ($scoreLabel)' : ''}'
-        : playerName;
-
+  Widget _buildSimpleText(
+    BuildContext context,
+    TextAlign textAlign,
+    String text,
+    CrossAxisAlignment crossAxis,
+  ) {
     return Column(
       crossAxisAlignment: crossAxis,
       children: [
         Text(
-          primaryText,
+          text,
           textAlign: textAlign,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
             color: Colors.white,
@@ -586,14 +644,33 @@ class _FotMobRow extends StatelessWidget {
             height: 1.2,
           ),
         ),
-        if ((event.type == MatchEventType.goal ||
-                event.type == MatchEventType.ownGoal ||
-                event.type == MatchEventType.penalty) &&
-            event.assistName != null)
+      ],
+    );
+  }
+
+  Widget _buildVarCheckText(
+    BuildContext context,
+    TextAlign textAlign,
+    String playerName,
+    CrossAxisAlignment crossAxis,
+  ) {
+    return Column(
+      crossAxisAlignment: crossAxis,
+      children: [
+        Text(
+          '🖥️ VAR Check',
+          textAlign: textAlign,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+            height: 1.2,
+          ),
+        ),
+        if (playerName.isNotEmpty)
           Padding(
             padding: const EdgeInsets.only(top: 1.0),
             child: Text(
-              'Assist by ${event.assistName}',
+              playerName,
               textAlign: textAlign,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: Colors.white70,
@@ -604,6 +681,170 @@ class _FotMobRow extends StatelessWidget {
           ),
       ],
     );
+  }
+
+  Widget _buildVarConfirmedText(
+    BuildContext context,
+    TextAlign textAlign,
+    String playerName,
+    CrossAxisAlignment crossAxis,
+  ) {
+    return Column(
+      crossAxisAlignment: crossAxis,
+      children: [
+        Text(
+          '✅🖥️ Goal Confirmed',
+          textAlign: textAlign,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+            height: 1.2,
+          ),
+        ),
+        if (playerName.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 1.0),
+            child: Text(
+              playerName,
+              textAlign: textAlign,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Colors.white70,
+                fontWeight: FontWeight.w400,
+                height: 1.2,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildVarCancelledText(
+    BuildContext context,
+    TextAlign textAlign,
+    String playerName,
+    CrossAxisAlignment crossAxis,
+  ) {
+    final reason = _deriveVarReason(event.detail);
+
+    return Column(
+      crossAxisAlignment: crossAxis,
+      children: [
+        Text(
+          '❌🖥️ Goal Cancelled',
+          textAlign: textAlign,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+            height: 1.2,
+          ),
+        ),
+        if (playerName.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 1.0),
+            child: Text(
+              playerName,
+              textAlign: textAlign,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Colors.white70,
+                fontWeight: FontWeight.w400,
+                height: 1.2,
+              ),
+            ),
+          ),
+        if (reason.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 1.0),
+            child: Text(
+              reason,
+              textAlign: textAlign,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Colors.white70,
+                fontWeight: FontWeight.w400,
+                height: 1.2,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildRedCardConfirmedText(
+    BuildContext context,
+    TextAlign textAlign,
+    String playerName,
+    CrossAxisAlignment crossAxis,
+  ) {
+    return Column(
+      crossAxisAlignment: crossAxis,
+      children: [
+        Text(
+          '✅🟥 Red Card Confirmed',
+          textAlign: textAlign,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+            height: 1.2,
+          ),
+        ),
+        if (playerName.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 1.0),
+            child: Text(
+              playerName,
+              textAlign: textAlign,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Colors.white70,
+                fontWeight: FontWeight.w400,
+                height: 1.2,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildRedCardCancelledText(
+    BuildContext context,
+    TextAlign textAlign,
+    String playerName,
+    CrossAxisAlignment crossAxis,
+  ) {
+    return Column(
+      crossAxisAlignment: crossAxis,
+      children: [
+        Text(
+          '❌🟥 Red Card Cancelled',
+          textAlign: textAlign,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+            height: 1.2,
+          ),
+        ),
+        if (playerName.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 1.0),
+            child: Text(
+              playerName,
+              textAlign: textAlign,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Colors.white70,
+                fontWeight: FontWeight.w400,
+                height: 1.2,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  String _deriveVarReason(String detail) {
+    final normalized = detail.trim();
+    if (normalized.isEmpty) return '';
+    final marker = normalized.contains('-')
+        ? normalized.split('-').last.trim()
+        : normalized;
+    return marker.isNotEmpty ? marker : '';
   }
 
   @override
@@ -622,7 +863,7 @@ class _FotMobRow extends StatelessWidget {
     );
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2.0),
+      padding: const EdgeInsets.symmetric(vertical: 6.0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: isHome

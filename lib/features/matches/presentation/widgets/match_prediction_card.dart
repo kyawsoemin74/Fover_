@@ -98,7 +98,6 @@ class _PredictionOption {
 
 class _OptionButton extends StatelessWidget {
   const _OptionButton({
-    super.key,
     required this.option,
     required this.width,
   });

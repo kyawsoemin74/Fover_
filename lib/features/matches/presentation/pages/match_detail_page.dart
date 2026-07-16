@@ -238,7 +238,7 @@ class _MatchDetailPageState extends ConsumerState<MatchDetailPage> {
           ),
         ),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 0),
           child: MatchDetailTabBar(
             selectedTab: resolvedTab,
             tabs: tabs,
