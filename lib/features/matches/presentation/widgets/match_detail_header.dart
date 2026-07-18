@@ -1,16 +1,20 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:fover/features/matches/domain/models/goal_summary.dart';
+import 'package:fover/features/matches/domain/models/goal_summary_result.dart';
 import 'package:fover/features/matches/domain/models/match_detail_model.dart';
 
 class MatchDetailHeader extends StatelessWidget {
   const MatchDetailHeader({
     super.key,
     required this.detail,
+    this.goalSummary,
     this.onHomeTeamTap,
     this.onAwayTeamTap,
   });
 
   final MatchDetailInfo detail;
+  final GoalSummaryResult? goalSummary;
   final VoidCallback? onHomeTeamTap;
   final VoidCallback? onAwayTeamTap;
 
@@ -26,36 +30,54 @@ class MatchDetailHeader extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.center,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Expanded(
-            child: _TeamPanel(
-              name: detail.homeTeam,
-              logoUrl: detail.homeTeamLogo,
-              onTap: onHomeTeamTap,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                flex: 3,
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: _TeamPanel(
+                    name: detail.homeTeam,
+                    logoUrl: detail.homeTeamLogo,
+                    onTap: onHomeTeamTap,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              _ScoreDisplay(
+                homeScore: detail.homeScore,
+                awayScore: detail.awayScore,
+                isUpcoming: isUpcoming,
+                isFinished: isFinished,
+                isHalfTime: isHalfTime,
+                isLive: isLive,
+                matchTime: detail.matchTime,
+                elapsed: detail.elapsed,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                flex: 3,
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: _TeamPanel(
+                    name: detail.awayTeam,
+                    logoUrl: detail.awayTeamLogo,
+                    onTap: onAwayTeamTap,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (goalSummary != null && (goalSummary!.homeGoalScorers.isNotEmpty || goalSummary!.awayGoalScorers.isNotEmpty)) ...[
+            const SizedBox(height: 10),
+            _GoalSummaryList(
+              goalSummary: goalSummary!,
             ),
-          ),
-          const SizedBox(width: 12),
-          _ScoreDisplay(
-            homeScore: detail.homeScore,
-            awayScore: detail.awayScore,
-            isUpcoming: isUpcoming,
-            isFinished: isFinished,
-            isHalfTime: isHalfTime,
-            isLive: isLive,
-            matchTime: detail.matchTime,
-            elapsed: detail.elapsed,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: _TeamPanel(
-              name: detail.awayTeam,
-              logoUrl: detail.awayTeamLogo,
-              onTap: onAwayTeamTap,
-            ),
-          ),
+          ],
         ],
       ),
     );
@@ -85,8 +107,8 @@ class _TeamPanel extends StatelessWidget {
             child: InkWell(
               onTap: onTap,
               child: SizedBox(
-                width: 68,
-                height: 68,
+                width: 54,
+                height: 54,
                 child: logoUrl.isNotEmpty
                     ? CachedNetworkImage(
                         imageUrl: logoUrl,
@@ -189,6 +211,96 @@ class _ScoreDisplay extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _GoalSummaryList extends StatelessWidget {
+  const _GoalSummaryList({required this.goalSummary});
+
+  final GoalSummaryResult goalSummary;
+
+  @override
+  Widget build(BuildContext context) {
+    final homeScorers = goalSummary.homeGoalScorers;
+    final awayScorers = goalSummary.awayGoalScorers;
+
+    if (homeScorers.isEmpty && awayScorers.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const SizedBox(height: 2),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisSize: MainAxisSize.min,
+                children: homeScorers.map((scorer) {
+                  return _ScorerText(
+                    scorer: scorer,
+                    textAlign: TextAlign.end,
+                  );
+                }).toList(),
+              ),
+            ),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 10),
+              child: Icon(
+                Icons.sports_soccer,
+                size: 16,
+                color: Colors.white70,
+              ),
+            ),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: awayScorers.map((scorer) {
+                  return _ScorerText(
+                    scorer: scorer,
+                    textAlign: TextAlign.start,
+                  );
+                }).toList(),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _ScorerText extends StatelessWidget {
+  const _ScorerText({required this.scorer, required this.textAlign});
+
+  final GoalSummary scorer;
+  final TextAlign textAlign;
+
+  @override
+  Widget build(BuildContext context) {
+    final minuteLabel = scorer.extraMinute > 0
+        ? '${scorer.minute}+${scorer.extraMinute}'
+        : '${scorer.minute}';
+    final suffix = scorer.isPenalty ? ' (P)' : scorer.isOwnGoal ? ' (OG)' : '';
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 2),
+      child: Text(
+        '${scorer.playerName} $minuteLabel\'$suffix',
+        textAlign: textAlign,
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: Colors.white,
+          fontWeight: FontWeight.w600,
+          fontSize: 11,
+        ),
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+      ),
     );
   }
 }

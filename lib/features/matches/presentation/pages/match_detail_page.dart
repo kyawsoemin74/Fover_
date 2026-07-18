@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:fover/features/matches/domain/models/match_detail_model.dart';
 import 'package:fover/features/matches/providers/match_detail_provider.dart';
 import 'package:fover/features/matches/providers/match_detail_state.dart';
+import 'package:fover/features/matches/providers/match_events_provider.dart';
 import 'package:fover/features/matches/providers/match_h2h_provider.dart';
 import 'package:fover/features/matches/providers/match_lineup_provider.dart';
 import 'package:fover/features/matches/providers/match_odds_provider.dart';
@@ -212,6 +213,7 @@ class _MatchDetailPageState extends ConsumerState<MatchDetailPage> {
     final tabs = buildMatchDetailTabs(detail);
     final selectedTab = ref.watch(matchDetailProvider(widget.matchId)).selectedTab;
     final resolvedTab = tabs.contains(selectedTab) ? selectedTab : MatchDetailTab.details;
+    final goalSummary = ref.watch(matchEventsProvider(widget.matchId)).goalSummary;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || !_pageController.hasClients) return;
@@ -229,6 +231,7 @@ class _MatchDetailPageState extends ConsumerState<MatchDetailPage> {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           child: MatchDetailHeader(
             detail: detail,
+            goalSummary: goalSummary,
             onHomeTeamTap: detail.homeTeamId > 0
                 ? () => context.push('/team/${detail.homeTeamId}')
                 : null,

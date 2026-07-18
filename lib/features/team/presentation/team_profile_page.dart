@@ -5,8 +5,11 @@ import 'package:go_router/go_router.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:fover/features/team/models/team_model.dart';
 import 'package:fover/features/team/presentation/team_facts_tab.dart';
+import 'package:fover/features/team/presentation/team_matches_tab.dart';
 import 'package:fover/features/team/presentation/team_placeholder_tab.dart';
 import 'package:fover/features/team/presentation/team_profile_tabs.dart';
+import 'package:fover/features/team/presentation/team_squad_tab.dart';
+import 'package:fover/features/team/presentation/team_standings_tab.dart';
 import 'package:fover/features/team/providers/team_provider.dart';
 import 'package:fover/features/team/providers/team_state.dart';
 
@@ -43,20 +46,7 @@ class TeamProfilePage extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: const Color(0xFF090B13),
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.chevron_left_rounded, size: 24),
-          onPressed: () => context.pop(),
-          tooltip: 'Back',
-        ),
-        title: const Text('Team Profile'),
-        backgroundColor: const Color(0xFF090B13),
-        elevation: 0,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: _buildBody(context, ref, state),
-      ),
+      body: _buildBody(context, ref, state),
     );
   }
 
@@ -98,104 +88,202 @@ class _TeamProfileContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final headerTitle = team.name.isEmpty ? 'Team' : team.name;
+
     return DefaultTabController(
       length: tabs.length,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _TeamProfileHeader(team: team),
-          const SizedBox(height: 16),
-          const TeamProfileTabs(tabs: tabs),
-          const SizedBox(height: 14),
-          Expanded(
-            child: TabBarView(
-              physics: const BouncingScrollPhysics(),
-              children: [
-                SingleChildScrollView(
-                  physics: const ClampingScrollPhysics(),
-                  child: TeamFactsTab(team: team),
+      child: NestedScrollView(
+        headerSliverBuilder: (context, innerBoxIsScrolled) {
+          return [
+            _buildTeamHeaderSliver(context, headerTitle, innerBoxIsScrolled),
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: _PinnedTabBarDelegate(
+                child: Container(
+                  color: const Color(0xFF090B13),
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                  child: TeamProfileTabs(tabs: tabs),
                 ),
-                const SingleChildScrollView(
-                  physics: ClampingScrollPhysics(),
-                  child: TeamPlaceholderTab(title: 'Matches'),
-                ),
-                const SingleChildScrollView(
-                  physics: ClampingScrollPhysics(),
-                  child: TeamPlaceholderTab(title: 'Standings'),
-                ),
-                const SingleChildScrollView(
-                  physics: ClampingScrollPhysics(),
-                  child: TeamPlaceholderTab(title: 'Squad'),
-                ),
-                const SingleChildScrollView(
-                  physics: ClampingScrollPhysics(),
-                  child: TeamPlaceholderTab(title: 'Top Players'),
-                ),
-              ],
+              ),
             ),
+          ];
+        },
+        body: TabBarView(
+          physics: const BouncingScrollPhysics(
+            parent: AlwaysScrollableScrollPhysics(),
           ),
-        ],
+          children: [
+            _KeepAliveTabBody(keyName: 'team-facts', child: TeamFactsTab(team: team)),
+            _KeepAliveTabBody(
+              keyName: 'matches',
+              child: TeamMatchesTab(teamId: team.teamId),
+            ),
+            _KeepAliveTabBody(
+              keyName: 'standings',
+              child: TeamStandingsTab(teamId: team.teamId),
+            ),
+            _KeepAliveTabBody(
+              keyName: 'squad',
+              child: TeamSquadTab(teamId: team.teamId),
+            ),
+            _KeepAliveTabBody(
+              keyName: 'top-players',
+              child: const TeamPlaceholderTab(title: 'Top Players'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTeamHeaderSliver(
+    BuildContext context,
+    String title,
+    bool innerBoxIsScrolled,
+  ) {
+    return SliverAppBar(
+      expandedHeight: 172,
+      pinned: true,
+      floating: false,
+      forceElevated: innerBoxIsScrolled,
+      backgroundColor: const Color(0xFF090B13),
+      automaticallyImplyLeading: false,
+      leading: IconButton(
+        icon: const Icon(Icons.chevron_left_rounded, size: 24),
+        color: Colors.white,
+        onPressed: () => context.pop(),
+        tooltip: 'Back',
+      ),
+      title: innerBoxIsScrolled
+          ? Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+              ),
+            )
+          : null,
+      flexibleSpace: FlexibleSpaceBar(
+        collapseMode: CollapseMode.pin,
+        background: Container(
+          padding: const EdgeInsets.fromLTRB(16, 74, 16, 10),
+          color: const Color(0xFF090B13),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              ClipOval(
+                child: Container(
+                  width: 64,
+                  height: 64,
+                  color: const Color(0xFF050B1A),
+                  child: (team.logo ?? '').trim().isNotEmpty
+                      ? CachedNetworkImage(
+                          imageUrl: team.logo!.trim(),
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => const Center(
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white24,
+                            ),
+                          ),
+                          errorWidget: (context, url, error) => const Icon(
+                            Icons.shield_outlined,
+                            color: Colors.white70,
+                            size: 40,
+                          ),
+                        )
+                      : const Icon(
+                          Icons.shield_outlined,
+                          color: Colors.white70,
+                          size: 40,
+                        ),
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
 }
 
-class _TeamProfileHeader extends StatelessWidget {
-  const _TeamProfileHeader({required this.team});
+class _PinnedTabBarDelegate extends SliverPersistentHeaderDelegate {
+  const _PinnedTabBarDelegate({required this.child});
 
-  final TeamModel team;
+  final Widget child;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return child;
+  }
+
+  @override
+  double get maxExtent => 70;
+
+  @override
+  double get minExtent => 70;
+
+  @override
+  bool shouldRebuild(covariant _PinnedTabBarDelegate oldDelegate) {
+    return oldDelegate.child != child;
+  }
+}
+
+class _KeepAliveTabBody extends StatefulWidget {
+  const _KeepAliveTabBody({required this.child, required this.keyName});
+
+  final Widget child;
+  final String keyName;
+
+  @override
+  State<_KeepAliveTabBody> createState() => _KeepAliveTabBodyState();
+}
+
+class _KeepAliveTabBodyState extends State<_KeepAliveTabBody>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: const Color(0xFF0E1220),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          ClipOval(
-            child: Container(
-              width: 92,
-              height: 92,
-              color: const Color(0xFF050B1A),
-              child: (team.logo ?? '').trim().isNotEmpty
-                  ? CachedNetworkImage(
-                      imageUrl: team.logo!.trim(),
-                      fit: BoxFit.cover,
-                      placeholder: (context, url) => const Center(
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white24,
-                        ),
-                      ),
-                      errorWidget: (context, url, error) => const Icon(
-                        Icons.shield_outlined,
-                        color: Colors.white70,
-                        size: 44,
-                      ),
-                    )
-                  : const Icon(
-                      Icons.shield_outlined,
-                      color: Colors.white70,
-                      size: 44,
-                    ),
+    super.build(context);
+    return SafeArea(
+      top: false,
+      bottom: false,
+      child: Builder(
+        builder: (context) {
+          return CustomScrollView(
+            key: PageStorageKey<String>(widget.keyName),
+            controller: PrimaryScrollController.of(context),
+            physics: const BouncingScrollPhysics(
+              parent: AlwaysScrollableScrollPhysics(),
             ),
-          ),
-          const SizedBox(height: 14),
-          Text(
-            team.name.isEmpty ? 'Team' : team.name,
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-        ],
+            slivers: [
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                sliver: SliverToBoxAdapter(child: widget.child),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

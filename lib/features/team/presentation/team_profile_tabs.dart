@@ -10,16 +10,25 @@ class TeamProfileTabs extends StatelessWidget {
     return TabBar(
       isScrollable: true,
       tabAlignment: TabAlignment.start,
-      labelPadding: const EdgeInsets.only(right: 8),
+      labelPadding: const EdgeInsets.symmetric(horizontal: 12),
       padding: EdgeInsets.zero,
-      indicatorSize: TabBarIndicatorSize.tab,
-      indicator: BoxDecoration(
-        color: const Color(0xFF1C2B44),
-        borderRadius: BorderRadius.circular(14),
+      indicatorSize: TabBarIndicatorSize.label,
+      indicator: const UnderlineTabIndicator(
+        borderSide: BorderSide(
+          width: 2,
+          color: Color(0xFF32D583),
+        ),
       ),
       dividerColor: Colors.transparent,
       labelColor: Colors.white,
       unselectedLabelColor: Colors.white60,
+      indicatorColor: const Color(0xFF32D583),
+      overlayColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.pressed)) {
+          return Colors.white10;
+        }
+        return Colors.transparent;
+      }),
       labelStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
         fontWeight: FontWeight.w700,
         fontSize: 13,
@@ -33,7 +42,7 @@ class TeamProfileTabs extends StatelessWidget {
             (tab) => Tab(
               height: 38,
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 4),
                 child: Text(tab),
               ),
             ),
