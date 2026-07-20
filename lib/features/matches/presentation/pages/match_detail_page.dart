@@ -10,12 +10,15 @@ import 'package:fover/features/matches/providers/match_lineup_provider.dart';
 import 'package:fover/features/matches/providers/match_odds_provider.dart';
 import 'package:fover/features/matches/presentation/sections/match_detail_details_section.dart';
 import 'package:fover/features/matches/presentation/sections/match_detail_h2h_section.dart';
+import 'package:fover/features/matches/presentation/sections/match_detail_last_fight_section.dart';
 import 'package:fover/features/matches/presentation/sections/match_detail_lineup_section.dart';
 import 'package:fover/features/matches/presentation/sections/match_detail_odds_section.dart';
 import 'package:fover/features/matches/presentation/sections/match_detail_standings_section.dart';
 import 'package:fover/features/matches/presentation/widgets/match_detail_header.dart';
 import 'package:fover/features/matches/presentation/widgets/match_detail_loading.dart';
 import 'package:fover/features/matches/presentation/widgets/match_detail_tab_bar.dart';
+import 'package:fover/features/team/providers/team_finished_matches_provider.dart'
+    as finished_matches_provider;
 
 class MatchDetailPage extends ConsumerStatefulWidget {
   const MatchDetailPage({
@@ -33,7 +36,15 @@ class MatchDetailPage extends ConsumerStatefulWidget {
   ConsumerState<MatchDetailPage> createState() => _MatchDetailPageState();
 }
 
-enum MatchDetailTab { details, lineups, odds, standings, knockout, h2h }
+enum MatchDetailTab {
+  details,
+  lineups,
+  odds,
+  lastFight,
+  standings,
+  knockout,
+  h2h,
+}
 
 extension MatchDetailTabData on MatchDetailTab {
   String get title {
@@ -44,6 +55,8 @@ extension MatchDetailTabData on MatchDetailTab {
         return 'Lineups';
       case MatchDetailTab.odds:
         return 'Odds';
+      case MatchDetailTab.lastFight:
+        return 'Last Fight';
       case MatchDetailTab.standings:
         return 'Standings';
       case MatchDetailTab.knockout:
@@ -63,6 +76,7 @@ List<MatchDetailTab> buildMatchDetailTabs(MatchDetailInfo detail) {
 
   if (detail.hasOdds) {
     tabs.add(MatchDetailTab.odds);
+    tabs.add(MatchDetailTab.lastFight);
   }
 
   if (detail.isKnockout && detail.hasBracket) {
@@ -106,6 +120,15 @@ class _MatchDetailPageState extends ConsumerState<MatchDetailPage> {
 
     notifier.registerTabLoader(MatchDetailTab.odds, ({bool forceRefresh = false}) async {
       await ref.read(matchOddsProvider(widget.matchId).notifier).loadOdds(forceRefresh: forceRefresh);
+    });
+
+    notifier.registerTabLoader(MatchDetailTab.lastFight, ({bool forceRefresh = false}) async {
+      await ref
+          .read(finished_matches_provider.teamFinishedMatchesProvider(widget.homeTeamId).notifier)
+          .load(forceRefresh: forceRefresh);
+      await ref
+          .read(finished_matches_provider.teamFinishedMatchesProvider(widget.awayTeamId).notifier)
+          .load(forceRefresh: forceRefresh);
     });
 
     notifier.registerTabLoader(MatchDetailTab.h2h, ({bool forceRefresh = false}) async {
@@ -279,6 +302,11 @@ class _MatchDetailPageState extends ConsumerState<MatchDetailPage> {
         );
       case MatchDetailTab.odds:
         return MatchDetailOddsSection(matchId: widget.matchId);
+      case MatchDetailTab.lastFight:
+        return MatchDetailLastFightSection(
+          homeTeamId: widget.homeTeamId,
+          awayTeamId: widget.awayTeamId,
+        );
       case MatchDetailTab.lineups:
         return MatchDetailLineupSection(matchId: widget.matchId);
       case MatchDetailTab.standings:

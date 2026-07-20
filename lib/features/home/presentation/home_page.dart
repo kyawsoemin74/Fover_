@@ -224,7 +224,7 @@ class _HomePageState extends ConsumerState<HomePage> {
             refreshToken: response.refreshToken,
           );
 
-      if (!mounted) return;
+      if (!mounted || !sheetContext.mounted) return;
       Navigator.of(sheetContext).pop();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Signed in with Google successfully.')),

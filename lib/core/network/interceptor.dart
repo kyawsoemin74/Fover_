@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:fover/core/config/app_config.dart';
 
@@ -24,8 +25,8 @@ class AppRequestInterceptor extends Interceptor {
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
     final uri = options.uri.toString();
-    print('HTTP REQUEST ${options.method} $uri');
-    print('HTTP REQUEST STACK\n${StackTrace.current}');
+    debugPrint('HTTP REQUEST ${options.method} $uri');
+    debugPrint('HTTP REQUEST STACK\n${StackTrace.current}');
 
     options.headers.addAll({
       'X-App-Version': AppConfig.appVersion,
@@ -45,9 +46,8 @@ class AppRequestInterceptor extends Interceptor {
 class AppErrorInterceptor extends Interceptor {
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
-    final uri = err.requestOptions.uri.toString();
-    print('HTTP ERROR ${err.requestOptions.method} $uri status=${err.response?.statusCode}');
-    print('HTTP ERROR STACK\n${err.stackTrace ?? StackTrace.current}');
+    
+    
 
     // Future: implement refresh token handling and centralized error side effects.
     handler.next(err);

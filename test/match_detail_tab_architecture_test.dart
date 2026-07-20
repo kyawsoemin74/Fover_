@@ -12,7 +12,6 @@ import 'package:fover/features/matches/domain/models/match_odds_model.dart';
 import 'package:fover/features/matches/domain/models/match_stats_model.dart';
 import 'package:fover/features/matches/presentation/pages/match_detail_page.dart';
 import 'package:fover/features/matches/providers/match_detail_provider.dart';
-import 'package:fover/features/matches/providers/match_detail_state.dart';
 import 'package:fover/features/standings/data/models/standing_response_model.dart';
 import 'package:fover/features/standings/domain/models/standing_model.dart';
 
@@ -236,7 +235,7 @@ void main() {
 
       notifier.setSelectedTab(MatchDetailTab.lineups);
 
-      expect(notifier.debugState.selectedTab, MatchDetailTab.lineups);
+      expect(notifier.state.selectedTab, MatchDetailTab.lineups);
     });
 
     test('triggers registered tab loaders when the selected tab changes', () async {
