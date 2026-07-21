@@ -33,6 +33,7 @@ class MatchDetailLastFightSection extends ConsumerWidget {
               Expanded(
                 child: Text(
                   'Home Team',
+                  textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
                     color: Colors.white,
                     fontWeight: FontWeight.w700,
@@ -43,6 +44,7 @@ class MatchDetailLastFightSection extends ConsumerWidget {
               Expanded(
                 child: Text(
                   'Away Team',
+                  textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
                     color: Colors.white,
                     fontWeight: FontWeight.w700,
@@ -128,18 +130,10 @@ class MatchDetailLastFightSection extends ConsumerWidget {
           ),
         );
       case TeamFinishedMatchesStatus.empty:
+        return const SizedBox.shrink();
       case TeamFinishedMatchesStatus.loaded:
       case TeamFinishedMatchesStatus.refreshing:
-        return _buildStatusCard(
-          context,
-          Text(
-            'No recent matches found.',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Colors.white60,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        );
+        return const SizedBox.shrink();
     }
   }
 

@@ -4,7 +4,7 @@ import 'package:fover/features/team/providers/team_finished_matches_state.dart';
 import 'package:fover/features/team/providers/team_provider.dart';
 import 'package:fover/features/team/repositories/team_repository.dart';
 
-const int _maxFinishedMatchesToShow = 5;
+const int _maxFinishedMatchesToShow = 10;
 
 final teamFinishedMatchesProvider = StateNotifierProvider.family<TeamFinishedMatchesNotifier, TeamFinishedMatchesState, int>(
   (ref, teamId) {
