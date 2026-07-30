@@ -72,7 +72,7 @@ class _FinishedMatchesCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final renderedMatches = state.matches;
+    final renderedMatches = _visibleMatches(state.matches);
     final title = renderedMatches.isNotEmpty ? 'Last ${renderedMatches.length} Matches' : 'Recent Matches';
 
     return Container(
@@ -101,7 +101,7 @@ class _FinishedMatchesCard extends StatelessWidget {
   }
 
   Widget _buildBody(BuildContext context) {
-    final renderedMatches = state.matches;
+    final renderedMatches = _visibleMatches(state.matches);
 
     switch (state.status) {
       case TeamFinishedMatchesStatus.loading:
@@ -222,6 +222,32 @@ class _FinishedMatchesCard extends StatelessWidget {
           }).toList(),
         );
     }
+  }
+
+  List<TeamFinishedMatch> _visibleMatches(List<TeamFinishedMatch> matches) {
+    if (matches.isEmpty) {
+      return const <TeamFinishedMatch>[];
+    }
+
+    final sortedMatches = [...matches]
+      ..sort((left, right) {
+        final leftDate = _parseDate(left.date ?? left.kickOffTime);
+        final rightDate = _parseDate(right.date ?? right.kickOffTime);
+        final comparison = rightDate.compareTo(leftDate);
+        if (comparison != 0) {
+          return comparison;
+        }
+        return (left.matchId ?? 0).compareTo(right.matchId ?? 0);
+      });
+
+    return sortedMatches.take(5).toList();
+  }
+
+  DateTime _parseDate(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return DateTime.fromMillisecondsSinceEpoch(0);
+    }
+    return DateTime.tryParse(value) ?? DateTime.fromMillisecondsSinceEpoch(0);
   }
 
   String _scoreLabel(TeamFinishedMatch match) {

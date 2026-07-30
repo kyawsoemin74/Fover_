@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fover/core/utils/country_flag_helper.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:fover/features/home/domain/models/match_model.dart';
+import 'package:fover/features/home/domain/models/match_status_formatter.dart';
 import 'package:fover/shared/widgets/match_card.dart';
 
 class LeagueCard extends StatelessWidget {
@@ -38,7 +39,7 @@ class LeagueCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final liveMatches = matches.where((match) => MatchInfo.isLiveStatus(match.status)).length;
+    final liveMatches = matches.where((match) => MatchStatusFormatter.isLive(match.status)).length;
     final totalMatches = matchCount > 0 ? matchCount : matches.length;
 
     return Card(
@@ -58,7 +59,7 @@ class LeagueCard extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 8,
-                    vertical: 4,
+                    vertical: 10,
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.center,

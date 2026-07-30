@@ -20,18 +20,18 @@ class MatchPredictionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final options = <_PredictionOption>[
+        final options = const <_PredictionOption>[
       _PredictionOption(
-        label: homeTeamName.isNotEmpty ? homeTeamName : 'Home Team',
-        subtitle: 'Home',
+        label: 'Home',
+        subtitle: '',
       ),
       _PredictionOption(
         label: 'Draw',
-        subtitle: 'Draw',
+        subtitle: '',
       ),
       _PredictionOption(
-        label: awayTeamName.isNotEmpty ? awayTeamName : 'Away Team',
-        subtitle: 'Away',
+        label: 'Away',
+        subtitle: '',
       ),
     ];
 

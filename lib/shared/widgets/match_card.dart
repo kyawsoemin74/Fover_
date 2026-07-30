@@ -1,6 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:fover/features/home/domain/models/match_model.dart';
+import 'package:fover/features/home/domain/models/match_status_formatter.dart';
 
 class MatchCard extends StatelessWidget {
   const MatchCard({
@@ -43,12 +43,7 @@ class MatchCard extends StatelessWidget {
     final scoreParts = _parseScore(score);
     final statusLine = _buildStatusLine(status, elapsed);
     final isLongStatusLabel = const <String>{'CANC', 'PST', 'ABD', 'SUSP', 'INT'}.contains(normalizedStatus);
-    final isLiveMinute = MatchInfo.isLiveStatus(status) && statusLine.isNotEmpty;
-    final statusColor = isLiveMinute
-        ? const Color(0xFF00C853)
-        : isLongStatusLabel
-            ? theme.colorScheme.error
-            : theme.colorScheme.onSurfaceVariant;
+    final statusColor = MatchStatusFormatter.getStatusColor(status, context: context);
     final statusFontSize = isLongStatusLabel ? 11.5 : 13.0;
     final teamBLine = teamB;
 
@@ -170,13 +165,7 @@ class MatchCard extends StatelessWidget {
   }
 
   String _buildStatusLine(String status, int elapsed) {
-    final normalized = status.toUpperCase();
-
-    if (normalized == 'NS' || normalized == 'UPCOMING' || normalized == 'SCHEDULED') {
-      return '';
-    }
-
-    return MatchInfo.displayStatus(status, elapsed: elapsed);
+    return MatchStatusFormatter.display(status, elapsed: elapsed);
   }
 
 

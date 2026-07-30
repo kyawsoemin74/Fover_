@@ -77,63 +77,6 @@ class MatchInfo {
     };
   }
 
-  static const Set<String> _finishedStatuses = {
-    'PEN',
-    'FT',
-    'AET',
-    'FT_PEN',
-    'CANC',
-    'PST',
-    'ABD',
-    'SUSP',
-    'INT',
-    'AWD',
-    'WO',
-  };
-
-  static const Map<String, String> _statusLabels = {
-    'AET': 'FT',
-    'FT_PEN': 'PEN',
-    'CANC': 'Cancelled',
-    'PST': 'Postponed',
-    'ABD': 'Abandoned',
-    'SUSP': 'Suspended',
-    'INT': 'Interrupted',
-  };
-
-  static bool isFinishedStatus(String status) {
-    return _finishedStatuses.contains(status.toUpperCase().trim());
-  }
-
-  static bool isLiveStatus(String status) {
-    final normalizedStatus = status.toUpperCase().trim();
-
-    if (normalizedStatus.isEmpty || isFinishedStatus(normalizedStatus)) {
-      return false;
-    }
-
-    return normalizedStatus.startsWith('1H') ||
-        normalizedStatus.startsWith('HT') ||
-        normalizedStatus.startsWith('2H') ||
-        normalizedStatus.startsWith('ET') ||
-        normalizedStatus.startsWith('BT') ||
-        normalizedStatus == 'P';
-  }
-
-  static String displayStatus(String status, {int elapsed = 0}) {
-    final normalizedStatus = status.toUpperCase().trim();
-
-    if (isFinishedStatus(normalizedStatus)) {
-      return _statusLabels[normalizedStatus] ?? normalizedStatus;
-    }
-
-    if (isLiveStatus(normalizedStatus)) {
-      return elapsed > 0 ? '$elapsed\'' : normalizedStatus;
-    }
-
-    return '';
-  }
-
   static int _parseId(dynamic value) {
     if (value is int) return value;
     if (value is String) return int.tryParse(value) ?? 0;

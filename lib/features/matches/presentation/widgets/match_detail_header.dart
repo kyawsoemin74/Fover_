@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:fover/features/home/domain/models/match_status_formatter.dart';
 import 'package:fover/features/matches/domain/models/goal_summary.dart';
 import 'package:fover/features/matches/domain/models/goal_summary_result.dart';
 import 'package:fover/features/matches/domain/models/match_detail_model.dart';
@@ -22,11 +23,12 @@ class MatchDetailHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final status = detail.status.toLowerCase();
-    final isUpcoming = _isUpcoming || status.contains('upcoming');
-    final isFinished = status.contains('ft') || status.contains('full') || status.contains('finished');
-    final isHalfTime = status.contains('ht');
-    final isLive = !isUpcoming && !isFinished;
+    final status = detail.status.trim();
+    final normalizedStatus = status.toUpperCase();
+    final isUpcoming = _isUpcoming || normalizedStatus.contains('UPCOMING');
+    final isHalfTime = normalizedStatus == 'HT';
+    final isLive = !isUpcoming && !isHalfTime && MatchStatusFormatter.isLive(status);
+    final completedStatusLabel = MatchStatusFormatter.display(status, elapsed: detail.elapsed);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -52,11 +54,12 @@ class MatchDetailHeader extends StatelessWidget {
                 homeScore: detail.homeScore,
                 awayScore: detail.awayScore,
                 isUpcoming: isUpcoming,
-                isFinished: isFinished,
                 isHalfTime: isHalfTime,
                 isLive: isLive,
+                completedStatusLabel: completedStatusLabel,
                 matchTime: detail.matchTime,
                 elapsed: detail.elapsed,
+                status: status,
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -152,21 +155,23 @@ class _ScoreDisplay extends StatelessWidget {
     required this.homeScore,
     required this.awayScore,
     required this.isUpcoming,
-    required this.isFinished,
     required this.isHalfTime,
     required this.isLive,
+    required this.completedStatusLabel,
     required this.matchTime,
     required this.elapsed,
+    required this.status,
   });
 
   final int homeScore;
   final int awayScore;
   final bool isUpcoming;
-  final bool isFinished;
   final bool isHalfTime;
   final bool isLive;
+  final String completedStatusLabel;
   final String matchTime;
   final int elapsed;
+  final String status;
 
   @override
   Widget build(BuildContext context) {
@@ -197,15 +202,15 @@ class _ScoreDisplay extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         Text(
-          isFinished
-              ? 'FT'
+          completedStatusLabel.isNotEmpty
+              ? completedStatusLabel
               : isHalfTime
                   ? 'HT'
                   : isLive
                       ? (elapsed > 0 ? '$elapsed\'' : matchTime)
                       : matchTime,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: Colors.white70,
+            color: MatchStatusFormatter.getStatusColor(status, context: context),
             fontWeight: FontWeight.w600,
             fontSize: 12,
           ),
@@ -222,8 +227,8 @@ class _GoalSummaryList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final homeScorers = goalSummary.homeGoalScorers;
-    final awayScorers = goalSummary.awayGoalScorers;
+    final homeScorers = _GoalSummaryPresenter.groupScorers(goalSummary.homeGoalScorers);
+    final awayScorers = _GoalSummaryPresenter.groupScorers(goalSummary.awayGoalScorers);
 
     if (homeScorers.isEmpty && awayScorers.isEmpty) {
       return const SizedBox.shrink();
@@ -240,9 +245,9 @@ class _GoalSummaryList extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 mainAxisSize: MainAxisSize.min,
-                children: homeScorers.map((scorer) {
+                children: homeScorers.map((entry) {
                   return _ScorerText(
-                    scorer: scorer,
+                    text: entry.displayText,
                     textAlign: TextAlign.end,
                   );
                 }).toList(),
@@ -260,9 +265,9 @@ class _GoalSummaryList extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
-                children: awayScorers.map((scorer) {
+                children: awayScorers.map((entry) {
                   return _ScorerText(
-                    scorer: scorer,
+                    text: entry.displayText,
                     textAlign: TextAlign.start,
                   );
                 }).toList(),
@@ -275,23 +280,78 @@ class _GoalSummaryList extends StatelessWidget {
   }
 }
 
-class _ScorerText extends StatelessWidget {
-  const _ScorerText({required this.scorer, required this.textAlign});
+class _GoalSummaryPresenter {
+  static List<_GroupedGoalSummaryEntry> groupScorers(List<GoalSummary> scorers) {
+    if (scorers.isEmpty) {
+      return const <_GroupedGoalSummaryEntry>[];
+    }
 
-  final GoalSummary scorer;
+    final grouped = <String, List<GoalSummary>>{};
+
+    for (final scorer in scorers) {
+      final playerName = scorer.playerName.trim();
+      if (playerName.isEmpty) {
+        continue;
+      }
+
+      grouped.putIfAbsent(playerName, () => <GoalSummary>[]).add(scorer);
+    }
+
+    return grouped.entries.map((entry) {
+      final sortedEvents = entry.value
+          .asMap()
+          .entries
+          .toList()
+        ..sort((left, right) {
+          final leftScorer = left.value;
+          final rightScorer = right.value;
+          final minuteComparison = leftScorer.minute.compareTo(rightScorer.minute);
+          if (minuteComparison != 0) {
+            return minuteComparison;
+          }
+
+          final extraMinuteComparison = leftScorer.extraMinute.compareTo(rightScorer.extraMinute);
+          if (extraMinuteComparison != 0) {
+            return extraMinuteComparison;
+          }
+
+          return left.key.compareTo(right.key);
+        });
+
+      final combinedLabels = sortedEvents.map((event) {
+        final scorer = event.value;
+        final minuteLabel = scorer.extraMinute > 0
+            ? '${scorer.minute}+${scorer.extraMinute}'
+            : '${scorer.minute}';
+        final suffix = scorer.isPenalty ? ' (P)' : scorer.isOwnGoal ? ' (OG)' : '';
+        return '$minuteLabel\'$suffix';
+      }).toList();
+
+      return _GroupedGoalSummaryEntry(
+        displayText: '${entry.key} ${combinedLabels.join(', ')}',
+      );
+    }).toList();
+  }
+}
+
+class _GroupedGoalSummaryEntry {
+  const _GroupedGoalSummaryEntry({required this.displayText});
+
+  final String displayText;
+}
+
+class _ScorerText extends StatelessWidget {
+  const _ScorerText({required this.text, required this.textAlign});
+
+  final String text;
   final TextAlign textAlign;
 
   @override
   Widget build(BuildContext context) {
-    final minuteLabel = scorer.extraMinute > 0
-        ? '${scorer.minute}+${scorer.extraMinute}'
-        : '${scorer.minute}';
-    final suffix = scorer.isPenalty ? ' (P)' : scorer.isOwnGoal ? ' (OG)' : '';
-
     return Padding(
       padding: const EdgeInsets.only(bottom: 2),
       child: Text(
-        '${scorer.playerName} $minuteLabel\'$suffix',
+        text,
         textAlign: textAlign,
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
           color: Colors.white,

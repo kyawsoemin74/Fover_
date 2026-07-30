@@ -204,17 +204,8 @@ class MatchDetailLastFightSection extends ConsumerWidget {
               Text(
                 scoreLabel,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.white70,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                resultLabel,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: resultColor,
                   fontWeight: FontWeight.w700,
-                  fontSize: 12,
                 ),
               ),
             ],

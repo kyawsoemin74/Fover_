@@ -15,7 +15,19 @@ class LeagueInfo {
   final String leagueName;
   final List<MatchInfo> matches;
 
-  int get liveMatches => matches.where((match) => MatchInfo.isLiveStatus(match.status)).length;
+  int get liveMatches => matches.where((match) {
+    final normalizedStatus = match.status.toUpperCase().trim();
+    if (normalizedStatus.isEmpty || _isFinishedStatus(normalizedStatus)) {
+      return false;
+    }
+
+    return normalizedStatus.startsWith('1H') ||
+        normalizedStatus.startsWith('HT') ||
+        normalizedStatus.startsWith('2H') ||
+        normalizedStatus.startsWith('ET') ||
+        normalizedStatus.startsWith('BT') ||
+        normalizedStatus == 'P';
+  }).length;
   int get totalMatches => matches.length;
   final String? countryFlagUrl;
   final String? leagueLogoUrl;
@@ -52,5 +64,22 @@ class LeagueInfo {
       'leagueName': leagueName,
       'matches': matches.map((match) => match.toJson()).toList(),
     };
+  }
+
+  bool _isFinishedStatus(String status) {
+    const finishedStatuses = {
+      'PEN',
+      'FT',
+      'AET',
+      'FT_PEN',
+      'CANC',
+      'PST',
+      'ABD',
+      'SUSP',
+      'INT',
+      'AWD',
+      'WO',
+    };
+    return finishedStatuses.contains(status.toUpperCase().trim());
   }
 }
