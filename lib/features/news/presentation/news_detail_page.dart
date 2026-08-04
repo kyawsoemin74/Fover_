@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:fover/features/ads/widgets/ad_slot.dart';
 import 'package:go_router/go_router.dart';
 import 'package:fover/features/news/domain/models/news_model.dart';
 import 'package:fover/features/news/providers/news_detail_provider.dart';
@@ -57,6 +58,8 @@ class NewsDetailPage extends ConsumerWidget {
             else ...[
               SliverToBoxAdapter(child: _NewsDetailHero(article: article)),
               SliverToBoxAdapter(child: _NewsDetailHeader(article: article)),
+              SliverToBoxAdapter(child: const SizedBox(height: 22)),
+              SliverToBoxAdapter(child: const Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: BannerAdSlot(placement: BannerPlacement.newsDetail))),
               SliverToBoxAdapter(child: const SizedBox(height: 22)),
               SliverToBoxAdapter(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: _NewsDetailContent(article: article))),
               if (relatedArticles.isNotEmpty) ...[

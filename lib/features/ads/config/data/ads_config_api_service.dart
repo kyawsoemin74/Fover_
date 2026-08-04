@@ -3,28 +3,23 @@ import 'package:fover/core/constants/api_constants.dart';
 import 'package:fover/core/network/api_result.dart';
 import 'package:fover/core/network/dio_client.dart';
 import 'package:fover/core/network/dio_error_mapper.dart';
-import 'package:fover/features/ads/domain/models/ad_model.dart';
+import 'package:fover/features/ads/config/ads_config_model.dart';
 
-class AdsApiService {
-  AdsApiService(this._dioClient);
+class AdsConfigApiService {
+  AdsConfigApiService(this._dioClient);
 
   final DioClient _dioClient;
 
-  Future<ApiResult<List<AdInfo>>> fetchAds() async {
+  Future<ApiResult<AdsConfigModel>> fetchConfig() async {
     try {
-      final response = await _dioClient.dio.get(ApiConstants.ads);
+      final response = await _dioClient.dio.get(ApiConstants.adsConfig);
       final payload = response.data;
 
       if (payload is Map<String, dynamic>) {
-        final items = payload['ads'] as List<dynamic>? ?? [];
-        final ads = items
-            .whereType<Map<String, dynamic>>()
-            .map((item) => AdInfo.fromJson(item))
-            .toList();
-        return ApiResult.success(ads);
+        return ApiResult.success(AdsConfigModel.fromJson(payload));
       }
 
-      return ApiResult.failure('Unexpected ads response format.');
+      return ApiResult.failure('Unexpected ads config response format.');
     } on DioException catch (exception, stackTrace) {
       return ApiResult.failure(DioErrorMapper.map(exception), stackTrace);
     } catch (error, stackTrace) {

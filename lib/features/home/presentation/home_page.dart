@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:fover/features/auth/data/auth_api_service.dart';
 import 'package:fover/features/auth/providers/auth_provider.dart';
 import 'package:fover/features/favorites/providers/favorites_provider.dart';
+import 'package:fover/features/ads/widgets/ad_slot.dart';
 import 'package:fover/features/home/providers/date_selection_provider.dart';
 import 'package:fover/features/home/providers/home_provider.dart';
 import 'package:fover/features/home/providers/home_state.dart';
@@ -96,6 +97,8 @@ class _HomePageState extends ConsumerState<HomePage> {
                     ],
                     const SizedBox(height: 12),
                     const HomeSectionHeader(title: ''),
+                    const SizedBox(height: 12),
+                    const BannerAdSlot(placement: BannerPlacement.home),
                     const SizedBox(height: 12),
                     if (homeState.status == HomeStatus.loading ||
                         homeState.status == HomeStatus.initial)

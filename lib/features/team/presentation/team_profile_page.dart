@@ -1,12 +1,14 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:fover/features/ads/widgets/ad_slot.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:fover/features/team/models/team_model.dart';
 import 'package:fover/features/team/presentation/team_facts_tab.dart';
 import 'package:fover/features/team/presentation/team_matches_tab.dart';
 import 'package:fover/features/team/presentation/team_placeholder_tab.dart';
+import 'package:fover/features/team/presentation/team_profile_header_layout.dart';
 import 'package:fover/features/team/presentation/team_profile_tabs.dart';
 import 'package:fover/features/team/presentation/team_squad_tab.dart';
 import 'package:fover/features/team/presentation/team_standings_tab.dart';
@@ -113,7 +115,18 @@ class _TeamProfileContent extends StatelessWidget {
             parent: AlwaysScrollableScrollPhysics(),
           ),
           children: [
-            _KeepAliveTabBody(keyName: 'team-facts', child: TeamFactsTab(team: team)),
+            _KeepAliveTabBody(
+              keyName: 'team-facts',
+              child: Column(
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.fromLTRB(16, 16, 16, 12),
+                    child: BannerAdSlot(placement: BannerPlacement.teamDetail),
+                  ),
+                  Expanded(child: TeamFactsTab(team: team)),
+                ],
+              ),
+            ),
             _KeepAliveTabBody(
               keyName: 'matches',
               child: TeamMatchesTab(teamId: team.teamId),
@@ -236,10 +249,10 @@ class _PinnedTabBarDelegate extends SliverPersistentHeaderDelegate {
   }
 
   @override
-  double get maxExtent => 70;
+  double get maxExtent => TeamProfileHeaderLayout.height;
 
   @override
-  double get minExtent => 70;
+  double get minExtent => TeamProfileHeaderLayout.height;
 
   @override
   bool shouldRebuild(covariant _PinnedTabBarDelegate oldDelegate) {
@@ -278,7 +291,7 @@ class _KeepAliveTabBodyState extends State<_KeepAliveTabBody>
             ),
             slivers: [
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                padding: const EdgeInsets.fromLTRB(4, 16, 4, 24),
                 sliver: SliverToBoxAdapter(child: widget.child),
               ),
             ],

@@ -9,6 +9,7 @@ import 'package:fover/features/matches/providers/match_h2h_provider.dart';
 import 'package:fover/features/matches/providers/match_lineup_provider.dart';
 import 'package:fover/features/matches/providers/match_odds_provider.dart';
 import 'package:fover/features/matches/presentation/sections/match_detail_details_section.dart';
+import 'package:fover/features/ads/widgets/ad_slot.dart';
 import 'package:fover/features/matches/presentation/sections/match_detail_h2h_section.dart';
 import 'package:fover/features/matches/presentation/sections/match_detail_last_fight_section.dart';
 import 'package:fover/features/matches/presentation/sections/match_detail_lineup_section.dart';
@@ -270,6 +271,10 @@ class _MatchDetailPageState extends ConsumerState<MatchDetailPage> {
             tabs: tabs,
             onTabSelected: _onTabSelected,
           ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: const BannerAdSlot(placement: BannerPlacement.matchDetail),
         ),
         Expanded(
           child: Padding(

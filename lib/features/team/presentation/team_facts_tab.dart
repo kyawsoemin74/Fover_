@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:fover/features/team/models/team_finished_match.dart';
 import 'package:fover/features/team/models/team_model.dart';
 import 'package:fover/features/team/providers/team_finished_matches_provider.dart';
@@ -172,50 +173,58 @@ class _FinishedMatchesCard extends StatelessWidget {
             return Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: Column(
-                  children: [
-                    ClipOval(
-                      child: Container(
-                        width: 42,
-                        height: 42,
-                        color: const Color(0xFF0E1220),
-                        child: _opponentLogo(match, teamId) != null
-                            ? CachedNetworkImage(
-                                imageUrl: _opponentLogo(match, teamId)!.trim(),
-                                fit: BoxFit.cover,
-                                placeholder: (context, url) => const Center(
-                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white24),
-                                ),
-                                errorWidget: (context, url, error) => const Icon(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () {
+                    if (match.matchId != null && match.matchId! > 0) {
+                      context.pushNamed(
+                        'matchDetail',
+                        pathParameters: {'matchId': match.matchId!.toString()},
+                        queryParameters: {
+                          'homeTeamId': match.homeTeamId?.toString() ?? '0',
+                          'awayTeamId': match.awayTeamId?.toString() ?? '0',
+                        },
+                      );
+                    }
+                  },
+                  child: Column(
+                    children: [
+                      ClipOval(
+                        child: Container(
+                          width: 42,
+                          height: 42,
+                          color: const Color(0xFF0E1220),
+                          child: _opponentLogo(match, teamId) != null
+                              ? CachedNetworkImage(
+                                  imageUrl: _opponentLogo(match, teamId)!.trim(),
+                                  fit: BoxFit.cover,
+                                  placeholder: (context, url) => const Center(
+                                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white24),
+                                  ),
+                                  errorWidget: (context, url, error) => const Icon(
+                                    Icons.shield_outlined,
+                                    color: Colors.white70,
+                                    size: 22,
+                                  ),
+                                )
+                              : const Icon(
                                   Icons.shield_outlined,
                                   color: Colors.white70,
                                   size: 22,
                                 ),
-                              )
-                            : const Icon(
-                                Icons.shield_outlined,
-                                color: Colors.white70,
-                                size: 22,
-                              ),
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      _scoreLabel(match),
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
+                      const SizedBox(height: 6),
+                      Text(
+                        _scoreLabel(match),
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: color,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      resultLabel,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: color,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
+                      const SizedBox(height: 4),
+                    ],
+                  ),
                 ),
               ),
             );
@@ -285,11 +294,11 @@ class _FinishedMatchesCard extends StatelessWidget {
       case 'Win':
         return const Color(0xFF32D583);
       case 'Draw':
-        return Colors.white60;
+        return Colors.white;
       case 'Loss':
         return const Color(0xFFFF5D5D);
       default:
-        return Colors.white60;
+        return Colors.white;
     }
   }
 }

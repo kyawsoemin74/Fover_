@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fover/features/team/presentation/team_profile_header_layout.dart';
 
 class TeamProfileTabs extends StatelessWidget {
   const TeamProfileTabs({super.key, required this.tabs});
@@ -40,7 +41,7 @@ class TeamProfileTabs extends StatelessWidget {
       tabs: tabs
           .map(
             (tab) => Tab(
-              height: 38,
+              height: TeamProfileHeaderLayout.tabBarHeight,
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4),
                 child: Text(tab),

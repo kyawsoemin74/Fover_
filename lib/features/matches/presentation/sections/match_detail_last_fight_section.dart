@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:fover/features/team/models/team_finished_match.dart';
 import 'package:fover/features/team/providers/team_finished_matches_provider.dart';
 import 'package:fover/features/team/providers/team_finished_matches_state.dart';
@@ -147,70 +149,122 @@ class MatchDetailLastFightSection extends ConsumerWidget {
     final scoreLabel = '${match.homeScore ?? '-'} - ${match.awayScore ?? '-'}';
     final resultLabel = _shortResultLabelForTeam(match, teamId);
     final resultColor = _resultColor(resultLabel);
+    final leagueName = (match.competitionName ?? '').trim();
+    final rawKickOffTime = (match.kickOffTime ?? '').trim();
+    final hasMetadata = leagueName.isNotEmpty && rawKickOffTime.isNotEmpty;
+    final formattedDate = hasMetadata ? _formatMatchDate(rawKickOffTime) : null;
+    final shouldShowMetadata = hasMetadata && formattedDate != null;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFF090B13),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white12),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          SizedBox(
-            width: double.infinity,
-            child: Row(
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () {
+        if (match.matchId != null && match.matchId! > 0) {
+          context.pushNamed(
+            'matchDetail',
+            pathParameters: {'matchId': match.matchId!.toString()},
+            queryParameters: {
+              'homeTeamId': match.homeTeamId.toString(),
+              'awayTeamId': match.awayTeamId.toString(),
+            },
+          );
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFF090B13),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white12),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: <Widget>[
+            SizedBox(
+              width: double.infinity,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (opponentLogoUrl != null &&
+                      opponentLogoUrl.trim().isNotEmpty)
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.network(
+                        opponentLogoUrl.trim(),
+                        width: 24,
+                        height: 24,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) =>
+                            const SizedBox(width: 24, height: 24),
+                      ),
+                    )
+                  else
+                    const SizedBox(width: 24, height: 24),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      opponentLabel,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      softWrap: false,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
               mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                if (opponentLogoUrl != null &&
-                    opponentLogoUrl.trim().isNotEmpty)
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.network(
-                      opponentLogoUrl.trim(),
-                      width: 24,
-                      height: 24,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) =>
-                          const SizedBox(width: 24, height: 24),
-                    ),
-                  )
-                else
-                  const SizedBox(width: 24, height: 24),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    opponentLabel,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    softWrap: false,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
+                Text(
+                  scoreLabel,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: resultColor,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Text(
-                scoreLabel,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: resultColor,
-                  fontWeight: FontWeight.w700,
+            if (shouldShowMetadata) ...[
+              const SizedBox(height: 4),
+              SizedBox(
+                width: double.infinity,
+                child: Text(
+                  leagueName,
+                  textAlign: TextAlign.left,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  softWrap: false,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Colors.white70,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 2),
+              SizedBox(
+                width: double.infinity,
+                child: Text(
+                  formattedDate,
+                  textAlign: TextAlign.left,
+                  maxLines: 1,
+                  overflow: TextOverflow.visible,
+                  softWrap: false,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Colors.white70,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
             ],
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -269,6 +323,17 @@ class MatchDetailLastFightSection extends ConsumerWidget {
       return '⚪ D';
     }
     return '⚪ D';
+  }
+
+  String? _formatMatchDate(String rawKickOffTime) {
+    if (rawKickOffTime.isEmpty) return null;
+
+    try {
+      final parsedDate = DateTime.parse(rawKickOffTime);
+      return DateFormat('dd MMM yyyy').format(parsedDate.toLocal());
+    } catch (_) {
+      return null;
+    }
   }
 
   Color _resultColor(String resultLabel) {

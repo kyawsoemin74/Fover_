@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:fover/features/ads/widgets/ad_slot.dart';
 import 'package:fover/core/utils/country_flag_helper.dart';
 import 'package:fover/features/leagues/domain/models/league_section_model.dart';
 import 'package:fover/features/leagues/providers/leagues_provider.dart';
@@ -47,6 +48,8 @@ class _LeaguesPageState extends ConsumerState<LeaguesPage> {
             ),
           ),
           const SizedBox(height: 16),
+          const BannerAdSlot(placement: BannerPlacement.leagueDetail),
+          const SizedBox(height: 12),
           Expanded(child: _buildBody(context, leaguesState, leaguesNotifier)),
         ],
       ),
