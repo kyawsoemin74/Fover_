@@ -63,7 +63,7 @@ class _HomePageState extends ConsumerState<HomePage> {
         HomeTopSection(
           onNotifications: () {},
           onSearch: () {},
-          onProfile: () => _showProfileSheet(context),
+          onProfile: () => _handleProfileTap(context),
         ),
         Expanded(
           child: PageView.builder(
@@ -248,6 +248,15 @@ class _HomePageState extends ConsumerState<HomePage> {
     }
   }
 
+  void _handleProfileTap(BuildContext context) {
+    final authState = ref.read(authProvider);
+    if (authState.status == AuthStatus.authenticated) {
+      _showLogoutSheet(context);
+    } else {
+      _showProfileSheet(context);
+    }
+  }
+
   void _showProfileSheet(BuildContext context) {
     showModalBottomSheet<void>(
       context: context,
@@ -306,6 +315,95 @@ class _HomePageState extends ConsumerState<HomePage> {
                   label: Text(
                     _isSigningIn ? 'Signing in…' : 'Continue with Google',
                   ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showLogoutSheet(BuildContext context) {
+    final authState = ref.read(authProvider);
+    final user = authState.user;
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) {
+        final theme = Theme.of(sheetContext);
+
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.onSurface.withAlpha(30),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              if (user != null) ...[
+                Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 28,
+                      backgroundImage: user.avatarUrl?.isNotEmpty == true
+                          ? NetworkImage(user.avatarUrl!)
+                          : null,
+                      backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            user.name ?? '',
+                            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            user.email,
+                            style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 18),
+              ],
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () async {
+                    try {
+                      await ref.read(authProvider.notifier).signOut();
+                      await GoogleSignIn.instance.signOut();
+                    } catch (_) {
+                      // ignore errors; signOut best-effort
+                    }
+
+                    if (!mounted || !context.mounted) return;
+                    Navigator.of(sheetContext).pop();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Signed out.')),
+                    );
+                  },
+                  child: const Text('Logout'),
                 ),
               ),
             ],
